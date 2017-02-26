@@ -296,6 +296,7 @@ public class Main  extends Application {
                 });
 
 
+
                 Print.pbl("down key");
                 event.consume();
             }
