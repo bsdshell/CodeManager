@@ -13,6 +13,7 @@ import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.Alert.AlertType;
+import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
@@ -29,6 +30,8 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static java.awt.Event.ENTER;
 
 
 /**
@@ -167,7 +170,8 @@ final class ProcessList {
 public class Main  extends Application {
     private AutoCompletionBinding<String> autoCompletionBinding;
     private final String allPathsFileName = "/Users/cat/myfile/github/java/text/path.txt";
-    private final String fName = "/Users/cat/myfile/github/snippets/snippet_test.m";
+    //private final String fName = "/Users/cat/myfile/github/snippets/snippet_test.m";
+    private final String fName = "/Users/cat/myfile/github/snippets/snippet.m";
 
     private ListView<String> list = new ListView<>();
 
@@ -204,6 +208,22 @@ public class Main  extends Application {
 
         list.setItems(data);
 
+        // combobox example, add item, add string,
+        Label companyNameLbl = new Label("Company Name");
+        final ComboBox<String> comboboxSearch = new ComboBox<String>();
+        comboboxSearch.setEditable(true);
+        comboboxSearch.getItems().add("name 1");
+        comboboxSearch.getItems().add("dog cat");
+        comboboxSearch.getItems().add("Malaysia Malaysian Airline");
+
+
+//        populateCompanyName(companyName);
+//        addComboListener(companyName);
+
+        final HBox companyHbox = new HBox(25);
+        companyHbox.getChildren().addAll(companyNameLbl, comboboxSearch);
+
+
         final HBox listBox = new HBox();
         listBox.getChildren().add(list);
 
@@ -221,6 +241,8 @@ public class Main  extends Application {
         final HBox searchBox = new HBox();
         searchBox.getChildren().add(searchTF);
         searchBox.getChildren().add(pathTF);
+
+        searchBox.getChildren().add(companyHbox);
 
         HBox searchParentHBox  = new HBox();
 
@@ -251,6 +273,60 @@ public class Main  extends Application {
         hboxTextField1.setSpacing(20);
 
 
+        comboboxSearch.valueProperty().addListener((obs, oldValue, newValue) -> {
+            if (newValue != null && ! comboboxSearch.getItems().contains(newValue)) {
+                comboboxSearch.getItems().add(newValue);
+            }
+        });
+
+        comboboxSearch.getEditor().addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if (event.getCode() == KeyCode.ENTER) {
+                comboboxSearch.getItems().add("ENTER KEY");
+                event.consume();
+            }else if(event.getCode() == KeyCode.DOWN){
+                comboboxSearch.getItems().add("DOWN KEY");
+
+                comboboxSearch.setVisible(true);
+
+                comboboxSearch.showingProperty().addListener(observable -> {
+                    if (!comboboxSearch.isShowing()) {
+                        comboboxSearch.setVisible(true);
+
+                    }
+                });
+
+
+                Print.pbl("down key");
+                event.consume();
+            }
+        });
+
+
+
+
+       /* // combobox event handler
+        comboboxSearch.setOnAction(new EventHandler<ActionEvent>() {
+
+            @Override
+            public void handle(KeyEvent key) {
+
+                if (comboboxSearch.getValue().equals("continuous")) {
+                    comboboxSearch.getItems().clear();
+                    comboboxSearch.getItems().add("Fogg and rainy night in Pearson Airport International Airport");
+                    comboboxSearch.getItems().add("Air Canadian plane slid off at Pearson's Airport in Toronto.");
+                }
+
+                switch (Key.getCode()) {
+                    case ENTER:
+                        break;
+                    default:
+                        break;
+                }
+
+            }
+        });*/
+
+
 
         list.setOnMouseClicked(new EventHandler<MouseEvent>() {
 
@@ -268,16 +344,46 @@ public class Main  extends Application {
             }
         });
 
-
         searchTF.setOnKeyPressed(new EventHandler<KeyEvent>() {
             public void handle(KeyEvent key) {
-                Print.pbl("Key Pressed: " + key.getText());
+                Print.pbl("Key Released: " + key.getText());
+                String prefix = searchTF.getText();
+                Print.pbl("prefix=" + prefix);
+                Set<String> setWords = processList.prefixFullKeyMap.get(prefix);
+
+                switch (key.getCode()) {
+                    case ENTER:
+                        Print.pbl("Enter");
+                        break;
+
+                    case DOWN:
+                        Print.pbl("Down");
+                    default:
+                        break;
+                }
 
 
-/*
-                List<String> listSet = new ArrayList(autoCompletionMap.get(searchTF.getText()));
-                TextFields.bindAutoCompletion(searchTF, listSet);
-*/
+                if(prefix != null && prefix.trim().length() > 0 && setWords != null) {
+
+                    if (setWords.size() > 0) {
+                        Print.pbl("setWords.size=" + setWords.size());
+                        TextFields.bindAutoCompletion(searchTF, new ArrayList(setWords));
+
+                        for(String s : setWords){
+                            Print.pbl("s=" + s);
+                        }
+                    }
+                    List<List<String>> lists = processList.mapList.get(prefix);
+                    if(lists != null && lists.size() > 0) {
+                        textAreaFile.clear();
+                        for (List<String> list : lists) {
+                            for (String s : list) {
+                                textAreaFile.appendText(s);
+                            }
+                            textAreaFile.appendText("----------------\n");
+                        }
+                    }
+                }
 
 
             }
@@ -285,10 +391,23 @@ public class Main  extends Application {
         
         searchTF.setOnKeyReleased(new EventHandler<KeyEvent>() {
             public void handle(KeyEvent key) {
+/*
                 Print.pbl("Key Released: " + key.getText());
                 String prefix = searchTF.getText();
                 Print.pbl("prefix=" + prefix);
                 Set<String> setWords = processList.prefixFullKeyMap.get(prefix);
+
+                switch (key.getCode()) {
+                    case ENTER:
+                        Print.pbl("Enter");
+                    break;
+
+                    case DOWN:
+                        Print.pbl("Down");
+                default:
+                    break;
+                }
+
 
                 if(prefix != null && prefix.trim().length() > 0 && setWords != null) {
 
@@ -310,6 +429,7 @@ public class Main  extends Application {
                         }
                     }
                 }
+*/
             }
         });
 
