@@ -1,6 +1,7 @@
 import classfile.Aron;
 import classfile.Print;
 import classfile.Ut;
+import com.google.common.base.Strings;
 import javafx.application.Application;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -16,13 +17,10 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
+import org.controlsfx.control.textfield.AutoCompletionBinding;
 import org.controlsfx.control.textfield.TextFields;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -32,52 +30,148 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+
 /**
- * convert a text file to a "list of list"
+ * convert a text file to a two dimension list
  * The first of the each list contains the key and file type are separated by colon
  */
 final class ProcessList {
-    public ProcessList() {
-    }
+    private String fName;
+    Map<String, Set<String>> prefixSuffixMap = new HashMap<>();
+    Map<String, List<List<String>>> mapList = new HashMap<>();
+    Map<String, Set<String>> prefixFullKeyMap = new HashMap<>();
 
-    /**
-     * extract all the keys from a list of list of string
-     *
-     * @return a list of string that contains all the keys
-     */
-    public List<String> getKeyList() {
-        return null;
+    public ProcessList(String fName) {
+//        String fName = "/Users/cat/myfile/github/snippets/snippet_test.m";
+        this.fName = fName;
+        List<List<String>> list2d = readCodeFile(fName);
+        buildAutoCompletionKeyCodeMap(list2d);
     }
-
-    // parameter
-    //
-    //
-    // e.g.
-    // jlist : *.java
-    // line contains code 1
-    //
-    // return a map that contains following:
-    // j -> line contains code 1
-    // jl -> line contains code 1
-    // jli -> line contains code 1
-    // jlis -> line contains code 1
-    // jlist -> line contains code 1
 
     // return map that contains key and value [K, v], key is prefix of string before ":"
     // value is List<String> contains all code after the first line
     public Map<String, List<String>> getPrefixMap(){
         return null;
     }
+
+    /**
+     * read the contents of file and store it in a two dimension array
+     *
+     * @param fileName is name of file
+     * @return a two dimension array contains the contents of fName
+     */
+    private List<List<String>> readCodeFile(String fileName){
+        List<String> list = Aron.readFileWithWhiteSpace(fileName);
+        List<List<String>> lists = new ArrayList<>();
+
+        List<String> line = new ArrayList<>();
+        for(String s : list){
+
+            if(s.trim().length() > 0){
+                line.add(s);
+            }else{
+                if(line.size() > 0) {
+                    lists.add(line);
+                    line = new ArrayList<>();
+                }
+            }
+        }
+        return lists;
+    }
+
+    /**
+     *
+     *
+     * @param lists contains the contents of file
+     *
+     * [dog : *.java
+     * my code]
+     *
+     * mapList contains following
+     * d ->[....]
+     * do ->[...]
+     * dog ->[...]
+     */
+    private void buildAutoCompletionKeyCodeMap(List<List<String>> lists){
+        List<String> listKeys = new ArrayList<>();
+        for(List<String> list : lists){
+            if(list.size() > 0){
+                List<String> splitKeys = Aron.split(list.get(0), ":");
+                if(splitKeys.size() > 0){
+
+                    String key = splitKeys.get(0).trim();
+                    Print.pbl("key=" + key);
+
+                    listKeys.add(key);
+
+                    for(int i=0; i<key.length(); i++){
+                        String prefix = key.substring(0, i+1);
+                        Print.pbl("prefix=" + prefix);
+                        List<List<String>> values = mapList.get(prefix);
+
+                        if(values != null){
+                            values.add(list);
+                        }else{
+                            List<List<String>> tmpLists = new ArrayList<>();
+                            tmpLists.add(list);
+                            mapList.put(prefix, tmpLists);
+                        }
+                    }
+                }
+            }
+        }
+        prefixSuffixMap = buildPrefixMap(listKeys);
+        buildFullKeyMap(prefixSuffixMap);
+
+    }
+
+    private void buildFullKeyMap(Map<String, Set<String>> map){
+        Set<String> set = new HashSet<>();
+        for(Map.Entry<String, Set<String>> entry : map.entrySet()){
+            for(String s : entry.getValue()) {
+                set.add(entry.getKey() + s);
+            }
+            prefixFullKeyMap.put(entry.getKey(), set);
+            set = new HashSet<>();
+        }
+    }
+
+    /**
+     * The method splits the "search key" to prefix and suffix, and store
+     * the prefix as key and the suffix as value in HashSet
+     *
+     * @param list is list of string that contains all the search string
+     *
+     * @return a map contains key which is prefix of the "search string" and
+     *          value which is suffix of "search string".
+     */
+    private Map<String, Set<String>> buildPrefixMap(List<String> list){
+        Map<String, Set<String>> map = new HashMap<>();
+        for(String str : list) {
+            for (int i = 0; i < str.length() - 1; i++) {
+                String prefix = str.substring(0, i + 1);
+                String suffix = str.substring(i + 1, str.length());
+                Set<String> set = map.get(prefix);
+                if (set == null)
+                    set = new HashSet<>();
+
+                set.add(suffix);
+                map.put(prefix, set);
+            }
+        }
+        return map;
+    }
 }
 
 
 public class Main  extends Application {
-    String fileName = null;
-    final String allPathsFileName = "/Users/cat/myfile/github/java/text/path.txt";
+    private AutoCompletionBinding<String> autoCompletionBinding;
+    private final String allPathsFileName = "/Users/cat/myfile/github/java/text/path.txt";
+    private final String fName = "/Users/cat/myfile/github/snippets/snippet_test.m";
 
-    ListView<String> list = new ListView<String>();
+    private ListView<String> list = new ListView<>();
 
-    ObservableList<String> data = FXCollections.observableArrayList();
+    private ObservableList<String> data = FXCollections.observableArrayList();
 
 
     public static void main(String[] args) {
@@ -86,13 +180,11 @@ public class Main  extends Application {
 
     @Override
     public void start(final Stage primaryStage) {
-        List<String> pathList = new ArrayList<>();
-
-        String fName = "/Users/cat/myfile/github/snippets/snippet.m";
+        final ProcessList processList = new ProcessList(fName);
         List<List<String>> list2d = readCode(fName);
-        Pair<Map<String, List<List<String>>>, Map<String, Set<String>>> pair = buildAutoCompletionKeyCodeMap(list2d);
+//        Pair<Map<String, List<List<String>>>, Map<String, Set<String>>> pair = buildAutoCompletionKeyCodeMap(list2d);
 
-        final Map<String, List<List<String>>> codeMap = pair.getKey();
+//        final Map<String, List<List<String>>> codeMap = pair.getKey();
 
         Group root = new Group();
 
@@ -104,7 +196,7 @@ public class Main  extends Application {
         textAreaFile.setMinSize(500,500);
         textAreaPath.setMinSize(500,500);
 
-        pathList = Aron.readFile(allPathsFileName);
+        List<String> pathList = Aron.readFile(allPathsFileName);
         for(String s : pathList){
             data.add(s + "\n");
         }
@@ -136,17 +228,7 @@ public class Main  extends Application {
         searchParentHBox.setPadding(new Insets(1, 1, 1, 1));
         searchParentHBox.getChildren().add(searchBox);
 
-        final Map<String, Set<String>> autoCompletionMap = pair.getValue();
-
-/*
-        Set<String> set = new HashSet<String>(Arrays.asList("cat", "dog"));
-        List<String> list = new ArrayList(set);
-        Print.pbl(list);
-*/
-
-     //   List<String> autoList = Arrays.asList("jlistcat", "jlistdog", "Autocompletion", "autocompletion");
-    //    TextField textField = new TextField();
-   //     TextFields.bindAutoCompletion(searchTF, new ArrayList(autoCompletionMap.get(searchTF.getText())));
+     //   final Map<String, Set<String>> autoCompletionMap = pair.getValue();
 
 
         HBox hboxField = new HBox();
@@ -191,10 +273,12 @@ public class Main  extends Application {
             public void handle(KeyEvent key) {
                 Print.pbl("Key Pressed: " + key.getText());
 
+
 /*
                 List<String> listSet = new ArrayList(autoCompletionMap.get(searchTF.getText()));
                 TextFields.bindAutoCompletion(searchTF, listSet);
 */
+
 
             }
         });
@@ -203,21 +287,28 @@ public class Main  extends Application {
             public void handle(KeyEvent key) {
                 Print.pbl("Key Released: " + key.getText());
                 String prefix = searchTF.getText();
-                List<String> listSet = new ArrayList(autoCompletionMap.get(prefix));
+                Print.pbl("prefix=" + prefix);
+                Set<String> setWords = processList.prefixFullKeyMap.get(prefix);
 
-                List<String> trylist = new ArrayList<>(Arrays.asList("cat", "dog", "cow", "dogcat", "catdog", "cat00", "dog00")); 
+                if(prefix != null && prefix.trim().length() > 0 && setWords != null) {
 
-                //TextFields.bindAutoCompletion(searchTF, listSet);
-                TextFields.bindAutoCompletion(searchTF, trylist);
-
-
-                List<List<String>> lists = codeMap.get(prefix);
-                textAreaFile.clear();
-                for(List<String> list : lists){
-                    for(String s : list) {
-                        textAreaFile.appendText(s);
+                    if (setWords.size() > 0) {
+                        Print.pbl("setWords.size=" + setWords.size());
+                        TextFields.bindAutoCompletion(searchTF, new ArrayList(setWords));
+                        for(String s : setWords){
+                            Print.pbl("s=" + s);
+                        }
                     }
-                    textAreaFile.appendText("----------------\n");
+                    List<List<String>> lists = processList.mapList.get(prefix);
+                    if(lists != null && lists.size() > 0) {
+                        textAreaFile.clear();
+                        for (List<String> list : lists) {
+                            for (String s : list) {
+                                textAreaFile.appendText(s);
+                            }
+                            textAreaFile.appendText("----------------\n");
+                        }
+                    }
                 }
             }
         });
@@ -226,25 +317,6 @@ public class Main  extends Application {
             @Override
             public void handle(ActionEvent arg0) {
                 Print.pbl(searchTF.getText());
-            }
-        });
-
-
-        buttonLoad.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent arg0) {
-                FileChooser fileChooser = new FileChooser();
-                FileChooser.ExtensionFilter extFilter = new FileChooser.ExtensionFilter("TXT files (*.txt)", "*.txt");
-                fileChooser.getExtensionFilters().add(extFilter);
-
-                File file = fileChooser.showOpenDialog(primaryStage);
-
-                if(file != null) {
-                    fileName = file.getAbsolutePath();
-
-                    if(fileName != null) {
-                    }
-                }
             }
         });
 
@@ -258,10 +330,10 @@ public class Main  extends Application {
         primaryStage.show();
 
         //test2();
-        //test3();
 //      test5();
 //        test6();
-        test7();
+        //test7();
+        test8();
     }
 
     public static  List<String> fileSearch(List<String> list, String pattern){
@@ -280,12 +352,14 @@ public class Main  extends Application {
         return matchList;
     }
 
+/*
     public static Map<String, List<List<String>>> processCodeFile() {
         String fName = "/Users/cat/myfile/github/snippets/snippet.m";
         List<List<String>> list2d = readCode(fName);
         Pair<Map<String, List<List<String>>>, Map<String, Set<String>>> pair = buildAutoCompletionKeyCodeMap(list2d);
         return pair.getKey();
     }
+*/
 
     public static Map<String, List<List<String>>> buildAutoCompletionMap(List<List<String>> lists){
         for(List<String> list : lists){
@@ -296,41 +370,15 @@ public class Main  extends Application {
         return null;
     }
 
-    public static Pair<Map<String, List<List<String>>>, Map<String, Set<String>>> buildAutoCompletionKeyCodeMap(List<List<String>> lists){
-        Map<String, List<List<String>>> map = new HashMap<>();
-        List<String> keyList = new ArrayList<>();
-        for(List<String> list : lists){
-            if(list.size() > 0){
-                List<String> listToken = Aron.split(list.get(0), ":");
-                if(listToken.size() > 0){
 
-                    String key = listToken.get(0).trim();
-                    Print.pbl("key=" + key);
 
-                    keyList.add(key);
-
-                    for(int i=0; i<key.length(); i++){
-                        String prefix = key.substring(0, i+1);
-                        Print.pbl("prefix=" + prefix);
-                        List<List<String>> listValue = map.get(prefix);
-
-                        if(listValue != null){
-                            listValue.add(list);
-                        }else{
-                            List<List<String>> list2d = new ArrayList<>();
-                            list2d.add(list);
-                            map.put(prefix, list2d);
-                        }
-                    }
-                }
-            }
-        }
-        Map<String, Set<String>> prefixMap = buildPrefixMap(keyList);
-        Pair<Map<String, List<List<String>>>, Map<String, Set<String>>> pair = new ImmutablePair<>(map, prefixMap);
-        return pair;
-    }
-
-    public static List<List<String>> readCode(String fName){
+    /**
+     * read the contents of file and store it in a two dimension array
+     *
+     * @param fName is name of file
+     * @return a two dimension array contains the contents of fName
+     */
+    private static List<List<String>> readCode(String fName){
         final int MaxBuf = 200;
         List<String> list = Aron.readFileLineByte(fName, MaxBuf);
         List<List<String>> list2d = new ArrayList<>();
@@ -357,14 +405,16 @@ public class Main  extends Application {
      * @param directory is to be read
      * @return a list of files or directories in the given directory.
      */
-    public static List<String> fileList(String directory) {
+    private static List<String> fileList(String directory) {
         List<String> fileNames = new ArrayList<>();
         try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(Paths.get(directory))) {
             for (Path path : directoryStream) {
                 fileNames.add(path.getFileName().toString());
-                Print.pbl(path.getFileName().toString());
+                //Print.pbl(path.getFileName().toString());
             }
-        } catch (IOException ex) {}
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
         return fileNames;
     }
 
@@ -376,7 +426,7 @@ public class Main  extends Application {
      * @return a map contains key which is prefix of the "search string" and
      *          value which is suffix of "search string".
      */
-    public static Map<String, Set<String>> buildPrefixMap(List<String> list){
+    private static Map<String, Set<String>> buildPrefixMap(List<String> list){
         Map<String, Set<String>> map = new HashMap<>();
 
         for(String str : list) {
@@ -398,7 +448,7 @@ public class Main  extends Application {
     /**
      * Test the getCurrentDir method
      */
-    public static  void test1() {
+    private static  void test1() {
         String dir = "/Users/cat/myfile/github/java";
         List<String> list = Aron.getCurrentDir(dir);
         Aron.printList(list);
@@ -407,28 +457,13 @@ public class Main  extends Application {
     /**
      * Test fileList method
      */
-    public static  void test2() {
+    private static  void test2() {
         String dir = "/Users/cat/myfile/github/java";
         List<String> list = fileList(dir);
         Aron.printList(list);
     }
 
-    /**
-     * Test readCode method
-     */
-    public static void test3(){
-        Aron.beg();
-
-        String fName = "/Users/cat/myfile/github/snippets/snippet.m";
-        List<List<String>> list2d = readCode(fName);
-        Pair<Map<String, List<List<String>>>, Map<String, Set<String>>> pair = buildAutoCompletionKeyCodeMap(list2d);
-
-        Aron.printList2dln(list2d);
-
-        Aron.end();
-    }
-
-    public static void test5(){
+    private static void test5(){
         String str = "Negotiable";
         Map<String, List<String>> map = new HashMap<>();
         for(int i=0; i<str.length(); i++){
@@ -446,7 +481,7 @@ public class Main  extends Application {
         }
     }
 
-    public static void test6() {
+    private static void test6() {
 
         String line = "0123456789";
         for(int i=0; i<line.length(); i++){
@@ -465,9 +500,15 @@ public class Main  extends Application {
         }
     }
 
-    public static  void test7(){
+    private static  void test7(){
         List<String> list = new ArrayList<>();
 
         Map<String, Set<String>> map = buildPrefixMap(list);
+    }
+
+    private static  void test8(){
+        String str = "";
+        boolean b = Strings.isNullOrEmpty(str);
+        Print.pbl(b);
     }
 }
