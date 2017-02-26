@@ -274,12 +274,17 @@ public class Main  extends Application {
 
 
         comboboxSearch.valueProperty().addListener((obs, oldValue, newValue) -> {
+            Print.pbl("combobox newValue=" + newValue);
+
             if (newValue != null && ! comboboxSearch.getItems().contains(newValue)) {
+                Print.pbl("newValue=" + newValue);
                 comboboxSearch.getItems().add(newValue);
             }
         });
 
         comboboxSearch.getEditor().addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            Print.pbl("keyPressed=" + event.getText());
+
             if (event.getCode() == KeyCode.ENTER) {
                 comboboxSearch.getItems().add("ENTER KEY");
                 event.consume();
@@ -287,14 +292,8 @@ public class Main  extends Application {
                 comboboxSearch.getItems().add("DOWN KEY");
 
                 comboboxSearch.setVisible(true);
-
-                comboboxSearch.showingProperty().addListener(observable -> {
-                    if (!comboboxSearch.isShowing()) {
-                        comboboxSearch.setVisible(true);
-
-                    }
-                });
-
+                if(!comboboxSearch.isShowing())
+                    comboboxSearch.show();
 
 
                 Print.pbl("down key");
