@@ -172,15 +172,10 @@ final class ProcessList {
 
 public class Main  extends Application {
     private AutoCompletionBinding<String> autoCompletionBinding;
-    private final String allPathsFileName = "/Users/cat/myfile/github/java/text/path.txt";
+    //private final String allPathsFileName = "/Users/cat/myfile/github/java/text/path.txt";
     //private final String fName = "/Users/cat/myfile/github/snippets/snippet_test.m";
     private final String fName = "/Users/cat/myfile/github/snippets/snippet.m";
-
-    private ListView<String> list = new ListView<>();
-
     private ObservableList<String> data = FXCollections.observableArrayList();
-
-
     public static void main(String[] args) {
         launch(args);
     }
@@ -195,67 +190,41 @@ public class Main  extends Application {
         alert.setTitle("Error");
 
         final TextArea textAreaFile = new TextArea();
-        final TextArea textAreaPath = new TextArea();
         textAreaFile.setMinSize(500,200);
-        textAreaPath.setMinSize(500,200);
 
-        List<String> pathList = Aron.readFile(allPathsFileName);
-        for(String s : pathList){
-            data.add(s + "\n");
-        }
-
-
-        list.setItems(data);
-
-        // combobox example, add item, add string,
         final ComboBox<String> comboboxSearch = new ComboBox<>();
         comboboxSearch.setEditable(true);
 
-        final HBox companyHbox = new HBox(25);
-        companyHbox.getChildren().add(comboboxSearch);
+//        final HBox companyHbox = new HBox(25);
+//        companyHbox.getChildren().add(comboboxSearch);
 
+//        final HBox searchBox = new HBox();
+//        searchBox.getChildren().add(companyHbox);
 
-        final HBox listBox = new HBox();
-        listBox.getChildren().add(list);
-
-
-        final TextField selectedFileTF = new TextField();
-        selectedFileTF.setEditable(false);
-        selectedFileTF.setPrefWidth(200);
-        Button buttonGeneText= new Button("Generate Text");
-
-
-        final HBox searchBox = new HBox();
-//        final TextField pathTF = new TextField ();
-//        pathTF.setMinWidth(400);
-//        searchBox.getChildren().add(pathTF);
-
-        searchBox.getChildren().add(companyHbox);
-
-        HBox searchParentHBox  = new HBox();
-
-        searchParentHBox.setAlignment(Pos.CENTER);
-        searchParentHBox.setPadding(new Insets(1, 1, 1, 1));
-        searchParentHBox.getChildren().add(searchBox);
+//        HBox searchParentHBox  = new HBox();
+//
+//        searchParentHBox.setAlignment(Pos.CENTER);
+//        searchParentHBox.setPadding(new Insets(1, 1, 1, 1));
+//        searchParentHBox.getChildren().add(searchBox);
 
         HBox hboxField = new HBox();
-        hboxField.setAlignment(Pos.CENTER);
+        hboxField.setAlignment(Pos.TOP_LEFT);
+        hboxField.setSpacing(10);
+        hboxField.getChildren().add(comboboxSearch);
+        hboxField.setAlignment(Pos.TOP_RIGHT);
         hboxField.setPadding(new Insets(1, 1, 1, 1));
-        hboxField.getChildren().add(list);
         hboxField.getChildren().add(textAreaFile);
 
+//        VBox box = new VBox();
+//        box.setAlignment(Pos.TOP_CENTER);
+//        box.setSpacing(5);
+//        box.getChildren().add(searchParentHBox);
+//        box.getChildren().add(vboxField);
 
-        VBox box = new VBox();
-        box.setAlignment(Pos.TOP_CENTER);
-        box.setSpacing(5);
-        box.getChildren().add(listBox);
-        box.getChildren().add(searchParentHBox);
-        box.getChildren().add(hboxField);
-
-        HBox hboxTextField1 = new HBox();
-
-        hboxTextField1.setAlignment(Pos.CENTER);
-        hboxTextField1.setSpacing(20);
+//        HBox hboxTextField1 = new HBox();
+//
+//        hboxTextField1.setAlignment(Pos.CENTER);
+//        hboxTextField1.setSpacing(20);
 
 
         comboboxSearch.valueProperty().addListener((obs, oldValue, prefix) -> {
@@ -341,31 +310,7 @@ public class Main  extends Application {
             }
         });
 
-        list.setOnMouseClicked(new EventHandler<MouseEvent>() {
-
-            @Override
-            public void handle(MouseEvent event) {
-                System.out.println("clicked on " + list.getSelectionModel().getSelectedItem());
-                String selectedItem = list.getSelectionModel().getSelectedItem();
-//                pathTF.setText(list.getSelectionModel().getSelectedItem());
-
-                List<String> flist = fileList(selectedItem.trim());
-                textAreaFile.clear();
-                for(String s : flist) {
-                    textAreaFile.appendText(s + "\n");
-                }
-            }
-        });
-
-
-
-        buttonGeneText.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent arg0) {
-            }
-        });
-
-        primaryStage.setScene(new Scene(box, 1000, 300));
+        primaryStage.setScene(new Scene(hboxField, 1000, 300));
         primaryStage.show();
 
         //test2();
