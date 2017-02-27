@@ -208,12 +208,11 @@ public class Main  extends Application {
         list.setItems(data);
 
         // combobox example, add item, add string,
-        Label companyNameLbl = new Label("Company Name");
         final ComboBox<String> comboboxSearch = new ComboBox<>();
         comboboxSearch.setEditable(true);
 
         final HBox companyHbox = new HBox(25);
-        companyHbox.getChildren().addAll(companyNameLbl, comboboxSearch);
+        companyHbox.getChildren().add(comboboxSearch);
 
 
         final HBox listBox = new HBox();
@@ -223,16 +222,13 @@ public class Main  extends Application {
         final TextField selectedFileTF = new TextField();
         selectedFileTF.setEditable(false);
         selectedFileTF.setPrefWidth(200);
-        Button buttonLoad = new Button("Select File");
         Button buttonGeneText= new Button("Generate Text");
 
-        final TextField searchTF = new TextField ();
-        final TextField pathTF = new TextField ();
 
-        pathTF.setMinWidth(400);
         final HBox searchBox = new HBox();
-        searchBox.getChildren().add(searchTF);
-        searchBox.getChildren().add(pathTF);
+//        final TextField pathTF = new TextField ();
+//        pathTF.setMinWidth(400);
+//        searchBox.getChildren().add(pathTF);
 
         searchBox.getChildren().add(companyHbox);
 
@@ -267,8 +263,34 @@ public class Main  extends Application {
 
         comboboxSearch.getSelectionModel().selectedItemProperty().addListener(new ChangeListener() {
             @Override
-            public void changed(ObservableValue ov, Object t, Object t1) {
+            public void changed(ObservableValue obValue, Object previous, Object current) {
                 Print.pbl("Time to change!");
+                Print.pbl("timetochange: current item:=" + comboboxSearch.getEditor().getText());
+                Print.pbl("obValue=" + obValue);
+                Print.pbl("previous=" + previous);
+                Print.pbl("current=" + current);
+                Print.pbl("Time to change2!");
+
+                if(current != null && !Strings.isNullOrEmpty((String)current)) {
+                    List<List<String>> lists = processList.mapList.get(current);
+                    if(lists != null && lists.size() > 0) {
+                        textAreaFile.clear();
+                        for (List<String> list : lists) {
+                            for (String s : list) {
+                                textAreaFile.appendText(s + "\n");
+                                Print.pbl("s=" + s);
+                            }
+                            textAreaFile.appendText("----------------------------------");
+                        }
+                    }
+                }else{
+                    if(current == null){
+                        Print.pbl("current is null");
+                    }else {
+                        Print.pbl("current is not null");
+                    }
+                    Print.pbl("ERROR: current=" + current);
+                }
             }
         });
 
@@ -325,7 +347,7 @@ public class Main  extends Application {
             public void handle(MouseEvent event) {
                 System.out.println("clicked on " + list.getSelectionModel().getSelectedItem());
                 String selectedItem = list.getSelectionModel().getSelectedItem();
-                pathTF.setText(list.getSelectionModel().getSelectedItem());
+//                pathTF.setText(list.getSelectionModel().getSelectedItem());
 
                 List<String> flist = fileList(selectedItem.trim());
                 textAreaFile.clear();
@@ -335,60 +357,7 @@ public class Main  extends Application {
             }
         });
 
-        searchTF.setOnKeyPressed(new EventHandler<KeyEvent>() {
-            public void handle(KeyEvent key) {
-                String prefix = searchTF.getText();
-                if(!Strings.isNullOrEmpty(prefix)){
-                    Print.pbl("prefix=" + prefix);
-                    Set<String> setWords = processList.prefixFullKeyMap.get(prefix);
 
-                    switch (key.getCode()) {
-                        case ENTER:
-                            Print.pbl("Enter");
-                            break;
-
-                        case DOWN:
-                            Print.pbl("Down");
-                        default:
-                            break;
-                    }
-
-
-                    if(setWords != null && setWords.size() > 0) {
-                        Print.pbl("setWords.size=" + setWords.size());
-                        TextFields.bindAutoCompletion(searchTF, new ArrayList(setWords));
-
-                        for(String s : setWords){
-                            Print.pbl("s=" + s);
-                        }
-
-                        List<List<String>> lists = processList.mapList.get(prefix);
-                        if(lists != null && lists.size() > 0) {
-                            textAreaFile.clear();
-                            for (List<String> list : lists) {
-                                for (String s : list) {
-                                    textAreaFile.appendText(s);
-                                }
-                                textAreaFile.appendText("----------------\n");
-                            }
-                        }
-                    }
-                }
-
-            }
-        });
-        
-        searchTF.setOnKeyReleased(new EventHandler<KeyEvent>() {
-            public void handle(KeyEvent key) {
-            }
-        });
-
-        searchTF.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent arg0) {
-                Print.pbl(searchTF.getText());
-            }
-        });
 
         buttonGeneText.setOnAction(new EventHandler<ActionEvent>() {
             @Override
