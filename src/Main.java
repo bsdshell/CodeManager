@@ -195,18 +195,6 @@ public class Main  extends Application {
         final ComboBox<String> comboboxSearch = new ComboBox<>();
         comboboxSearch.setEditable(true);
 
-//        final HBox companyHbox = new HBox(25);
-//        companyHbox.getChildren().add(comboboxSearch);
-
-//        final HBox searchBox = new HBox();
-//        searchBox.getChildren().add(companyHbox);
-
-//        HBox searchParentHBox  = new HBox();
-//
-//        searchParentHBox.setAlignment(Pos.CENTER);
-//        searchParentHBox.setPadding(new Insets(1, 1, 1, 1));
-//        searchParentHBox.getChildren().add(searchBox);
-
         HBox hboxField = new HBox();
         hboxField.setAlignment(Pos.TOP_LEFT);
         hboxField.setSpacing(10);
@@ -214,17 +202,6 @@ public class Main  extends Application {
         hboxField.setAlignment(Pos.TOP_RIGHT);
         hboxField.setPadding(new Insets(1, 1, 1, 1));
         hboxField.getChildren().add(textAreaFile);
-
-//        VBox box = new VBox();
-//        box.setAlignment(Pos.TOP_CENTER);
-//        box.setSpacing(5);
-//        box.getChildren().add(searchParentHBox);
-//        box.getChildren().add(vboxField);
-
-//        HBox hboxTextField1 = new HBox();
-//
-//        hboxTextField1.setAlignment(Pos.CENTER);
-//        hboxTextField1.setSpacing(20);
 
 
         comboboxSearch.valueProperty().addListener((obs, oldValue, prefix) -> {
