@@ -3,6 +3,8 @@ import classfile.Print;
 import classfile.Ut;
 import com.google.common.base.Strings;
 import javafx.application.Application;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -31,6 +33,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.google.common.base.Strings.nullToEmpty;
 import static java.awt.Event.ENTER;
 
 
@@ -186,10 +189,6 @@ public class Main  extends Application {
     public void start(final Stage primaryStage) {
         final ProcessList processList = new ProcessList(fName);
         List<List<String>> list2d = readCode(fName);
-//        Pair<Map<String, List<List<String>>>, Map<String, Set<String>>> pair = buildAutoCompletionKeyCodeMap(list2d);
-
-//        final Map<String, List<List<String>>> codeMap = pair.getKey();
-
         Group root = new Group();
 
         final Alert alert = new Alert(AlertType.INFORMATION);
@@ -197,8 +196,8 @@ public class Main  extends Application {
 
         final TextArea textAreaFile = new TextArea();
         final TextArea textAreaPath = new TextArea();
-        textAreaFile.setMinSize(500,500);
-        textAreaPath.setMinSize(500,500);
+        textAreaFile.setMinSize(500,200);
+        textAreaPath.setMinSize(500,200);
 
         List<String> pathList = Aron.readFile(allPathsFileName);
         for(String s : pathList){
@@ -210,15 +209,8 @@ public class Main  extends Application {
 
         // combobox example, add item, add string,
         Label companyNameLbl = new Label("Company Name");
-        final ComboBox<String> comboboxSearch = new ComboBox<String>();
+        final ComboBox<String> comboboxSearch = new ComboBox<>();
         comboboxSearch.setEditable(true);
-        comboboxSearch.getItems().add("name 1");
-        comboboxSearch.getItems().add("dog cat");
-        comboboxSearch.getItems().add("Malaysia Malaysian Airline");
-
-
-//        populateCompanyName(companyName);
-//        addComboListener(companyName);
 
         final HBox companyHbox = new HBox(25);
         companyHbox.getChildren().addAll(companyNameLbl, comboboxSearch);
@@ -250,9 +242,6 @@ public class Main  extends Application {
         searchParentHBox.setPadding(new Insets(1, 1, 1, 1));
         searchParentHBox.getChildren().add(searchBox);
 
-     //   final Map<String, Set<String>> autoCompletionMap = pair.getValue();
-
-
         HBox hboxField = new HBox();
         hboxField.setAlignment(Pos.CENTER);
         hboxField.setPadding(new Insets(1, 1, 1, 1));
@@ -273,60 +262,62 @@ public class Main  extends Application {
         hboxTextField1.setSpacing(20);
 
 
-        comboboxSearch.valueProperty().addListener((obs, oldValue, newValue) -> {
-            Print.pbl("combobox newValue=" + newValue);
+        comboboxSearch.valueProperty().addListener((obs, oldValue, prefix) -> {
+        });
 
-            if (newValue != null && ! comboboxSearch.getItems().contains(newValue)) {
-                Print.pbl("newValue=" + newValue);
-                comboboxSearch.getItems().add(newValue);
+        comboboxSearch.getSelectionModel().selectedItemProperty().addListener(new ChangeListener() {
+            @Override
+            public void changed(ObservableValue ov, Object t, Object t1) {
+                Print.pbl("Time to change!");
             }
         });
+
 
         comboboxSearch.getEditor().addEventFilter(KeyEvent.KEY_PRESSED, event -> {
-            Print.pbl("keyPressed=" + event.getText());
+            Print.pbl("KEY_PRESSED: KeyEvent       :=" + comboboxSearch.getEditor().getText());
 
             if (event.getCode() == KeyCode.ENTER) {
-                comboboxSearch.getItems().add("ENTER KEY");
-                event.consume();
+                Print.pbl("ENTER KEY: selected item:=" + comboboxSearch.getEditor().getText());
+                comboboxSearch.getItems().clear();
+                comboboxSearch.hide();
             }else if(event.getCode() == KeyCode.DOWN){
-                comboboxSearch.getItems().add("DOWN KEY");
+                String prefix = comboboxSearch.getEditor().getText();
+                Print.pbl("DOWN KEY: selected item:=" + comboboxSearch.getEditor().getText());
 
-                comboboxSearch.setVisible(true);
-                if(!comboboxSearch.isShowing())
-                    comboboxSearch.show();
+                if(!Strings.isNullOrEmpty(prefix)) {
+                    Print.pbl("prefix=" + prefix);
+                    Set<String> setWords = processList.prefixFullKeyMap.get(prefix);
+                    if(setWords != null && setWords.size() > 0) {
+                        comboboxSearch.getItems().addAll(new ArrayList(setWords));
+                        if(!comboboxSearch.isShowing()) {
+                            comboboxSearch.show();
+                        }
+                    }else{
+                        Print.pbl("prefix= is null or empty");
+                    }
+                }
+            }else{
+                Print.pbl("line 342");
 
-
-                Print.pbl("down key");
-                event.consume();
+                //  input = dog = do + g
+                String input = comboboxSearch.getEditor().getText() + event.getText();
+                if (!Strings.isNullOrEmpty(input)) {
+                    Print.pbl("input=" + input);
+                    Set<String> setWords = processList.prefixFullKeyMap.get(input);
+                    if (setWords != null && setWords.size() > 0) {
+                        comboboxSearch.getItems().clear();
+                        comboboxSearch.getItems().addAll(new ArrayList(setWords));
+                        if (!comboboxSearch.isShowing()) {
+                            comboboxSearch.show();
+                        }
+                    } else {
+                        Print.pbl("input= is null or empty");
+                        comboboxSearch.getItems().clear();
+                        comboboxSearch.hide();
+                    }
+                }
             }
         });
-
-
-
-
-       /* // combobox event handler
-        comboboxSearch.setOnAction(new EventHandler<ActionEvent>() {
-
-            @Override
-            public void handle(KeyEvent key) {
-
-                if (comboboxSearch.getValue().equals("continuous")) {
-                    comboboxSearch.getItems().clear();
-                    comboboxSearch.getItems().add("Fogg and rainy night in Pearson Airport International Airport");
-                    comboboxSearch.getItems().add("Air Canadian plane slid off at Pearson's Airport in Toronto.");
-                }
-
-                switch (Key.getCode()) {
-                    case ENTER:
-                        break;
-                    default:
-                        break;
-                }
-
-            }
-        });*/
-
-
 
         list.setOnMouseClicked(new EventHandler<MouseEvent>() {
 
@@ -346,90 +337,49 @@ public class Main  extends Application {
 
         searchTF.setOnKeyPressed(new EventHandler<KeyEvent>() {
             public void handle(KeyEvent key) {
-                Print.pbl("Key Released: " + key.getText());
                 String prefix = searchTF.getText();
-                Print.pbl("prefix=" + prefix);
-                Set<String> setWords = processList.prefixFullKeyMap.get(prefix);
+                if(!Strings.isNullOrEmpty(prefix)){
+                    Print.pbl("prefix=" + prefix);
+                    Set<String> setWords = processList.prefixFullKeyMap.get(prefix);
 
-                switch (key.getCode()) {
-                    case ENTER:
-                        Print.pbl("Enter");
-                        break;
+                    switch (key.getCode()) {
+                        case ENTER:
+                            Print.pbl("Enter");
+                            break;
 
-                    case DOWN:
-                        Print.pbl("Down");
-                    default:
-                        break;
-                }
+                        case DOWN:
+                            Print.pbl("Down");
+                        default:
+                            break;
+                    }
 
 
-                if(prefix != null && prefix.trim().length() > 0 && setWords != null) {
-
-                    if (setWords.size() > 0) {
+                    if(setWords != null && setWords.size() > 0) {
                         Print.pbl("setWords.size=" + setWords.size());
                         TextFields.bindAutoCompletion(searchTF, new ArrayList(setWords));
 
                         for(String s : setWords){
                             Print.pbl("s=" + s);
                         }
-                    }
-                    List<List<String>> lists = processList.mapList.get(prefix);
-                    if(lists != null && lists.size() > 0) {
-                        textAreaFile.clear();
-                        for (List<String> list : lists) {
-                            for (String s : list) {
-                                textAreaFile.appendText(s);
+
+                        List<List<String>> lists = processList.mapList.get(prefix);
+                        if(lists != null && lists.size() > 0) {
+                            textAreaFile.clear();
+                            for (List<String> list : lists) {
+                                for (String s : list) {
+                                    textAreaFile.appendText(s);
+                                }
+                                textAreaFile.appendText("----------------\n");
                             }
-                            textAreaFile.appendText("----------------\n");
                         }
                     }
                 }
-
 
             }
         });
         
         searchTF.setOnKeyReleased(new EventHandler<KeyEvent>() {
             public void handle(KeyEvent key) {
-/*
-                Print.pbl("Key Released: " + key.getText());
-                String prefix = searchTF.getText();
-                Print.pbl("prefix=" + prefix);
-                Set<String> setWords = processList.prefixFullKeyMap.get(prefix);
-
-                switch (key.getCode()) {
-                    case ENTER:
-                        Print.pbl("Enter");
-                    break;
-
-                    case DOWN:
-                        Print.pbl("Down");
-                default:
-                    break;
-                }
-
-
-                if(prefix != null && prefix.trim().length() > 0 && setWords != null) {
-
-                    if (setWords.size() > 0) {
-                        Print.pbl("setWords.size=" + setWords.size());
-                        TextFields.bindAutoCompletion(searchTF, new ArrayList(setWords));
-                        for(String s : setWords){
-                            Print.pbl("s=" + s);
-                        }
-                    }
-                    List<List<String>> lists = processList.mapList.get(prefix);
-                    if(lists != null && lists.size() > 0) {
-                        textAreaFile.clear();
-                        for (List<String> list : lists) {
-                            for (String s : list) {
-                                textAreaFile.appendText(s);
-                            }
-                            textAreaFile.appendText("----------------\n");
-                        }
-                    }
-                }
-*/
             }
         });
 
@@ -446,7 +396,7 @@ public class Main  extends Application {
             }
         });
 
-        primaryStage.setScene(new Scene(box, 1000, 800));
+        primaryStage.setScene(new Scene(box, 1000, 300));
         primaryStage.show();
 
         //test2();
@@ -471,15 +421,6 @@ public class Main  extends Application {
         }
         return matchList;
     }
-
-/*
-    public static Map<String, List<List<String>>> processCodeFile() {
-        String fName = "/Users/cat/myfile/github/snippets/snippet.m";
-        List<List<String>> list2d = readCode(fName);
-        Pair<Map<String, List<List<String>>>, Map<String, Set<String>>> pair = buildAutoCompletionKeyCodeMap(list2d);
-        return pair.getKey();
-    }
-*/
 
     public static Map<String, List<List<String>>> buildAutoCompletionMap(List<List<String>> lists){
         for(List<String> list : lists){
