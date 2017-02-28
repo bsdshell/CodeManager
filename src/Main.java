@@ -18,7 +18,9 @@ import javafx.scene.control.Alert.AlertType;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import org.controlsfx.control.textfield.AutoCompletionBinding;
@@ -186,26 +188,39 @@ public class Main  extends Application {
         List<List<String>> list2d = readCode(fName);
         Group root = new Group();
 
+        final double textFieldWidth = 600;
+        final double textFieldHeight = 600;
+        final double comboboxWith = 300;
+        GridPane gridpane = new GridPane();
+        gridpane.setPadding(new Insets(5));
+        gridpane.setHgap(40);
+        gridpane.setVgap(2);
+
+
         final Alert alert = new Alert(AlertType.INFORMATION);
         alert.setTitle("Error");
 
         final TextArea textAreaFile = new TextArea();
-        textAreaFile.setMinSize(500,200);
+        textAreaFile.setPrefWidth(textFieldWidth);
 
         final ComboBox<String> comboboxSearch = new ComboBox<>();
         comboboxSearch.setEditable(true);
+        comboboxSearch.setPrefWidth(300);
 
-        HBox hboxField = new HBox();
-        hboxField.setAlignment(Pos.TOP_LEFT);
-        hboxField.setSpacing(10);
-        hboxField.getChildren().add(comboboxSearch);
-        hboxField.setAlignment(Pos.TOP_RIGHT);
-        hboxField.setPadding(new Insets(1, 1, 1, 1));
-        hboxField.getChildren().add(textAreaFile);
+        VBox vboxComboboxSearch = new VBox();
+        vboxComboboxSearch.setAlignment(Pos.TOP_CENTER);
+        vboxComboboxSearch.setSpacing(10);
+        vboxComboboxSearch.getChildren().add(comboboxSearch);
 
+        VBox vboxTextFieldFile = new VBox();
+        VBox.setVgrow(textAreaFile, Priority.ALWAYS);
 
-        comboboxSearch.valueProperty().addListener((obs, oldValue, prefix) -> {
-        });
+        vboxTextFieldFile.setPrefWidth(textFieldWidth);
+        vboxTextFieldFile.setPrefHeight(textFieldHeight);
+
+        vboxTextFieldFile.setAlignment(Pos.TOP_CENTER);
+        vboxTextFieldFile.setPadding(new Insets(1, 1, 1, 1));
+        vboxTextFieldFile.getChildren().add(textAreaFile);
 
         comboboxSearch.getSelectionModel().selectedItemProperty().addListener(new ChangeListener() {
             @Override
@@ -221,12 +236,13 @@ public class Main  extends Application {
                     List<List<String>> lists = processList.mapList.get(current);
                     if(lists != null && lists.size() > 0) {
                         textAreaFile.clear();
+                        textAreaFile.appendText("----------------------------------\n");
                         for (List<String> list : lists) {
                             for (String s : list) {
                                 textAreaFile.appendText(s + "\n");
                                 Print.pbl("s=" + s);
                             }
-                            textAreaFile.appendText("----------------------------------");
+                            textAreaFile.appendText("----------------------------------\n");
                         }
                     }
                 }else{
@@ -287,7 +303,10 @@ public class Main  extends Application {
             }
         });
 
-        primaryStage.setScene(new Scene(hboxField, 1000, 300));
+        gridpane.add(vboxComboboxSearch, 0, 0);
+        gridpane.add(vboxTextFieldFile, 1, 0);
+
+        primaryStage.setScene(new Scene(gridpane, comboboxWith + textFieldWidth, textFieldHeight));
         primaryStage.show();
 
         //test2();
