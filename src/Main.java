@@ -3,6 +3,9 @@ import classfile.Print;
 import classfile.Ut;
 import com.google.common.base.Strings;
 import javafx.application.Application;
+import javafx.beans.binding.BooleanBinding;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
@@ -15,9 +18,7 @@ import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.Alert.AlertType;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
-import javafx.scene.input.MouseEvent;
+import javafx.scene.input.*;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -48,6 +49,8 @@ final class ProcessList {
     Map<String, Set<String>> prefixSuffixMap = new HashMap<>();
     Map<String, List<List<String>>> mapList = new HashMap<>();
     Map<String, Set<String>> prefixFullKeyMap = new HashMap<>();
+
+
 
     public ProcessList(String fName) {
 //        String fName = "/Users/cat/myfile/github/snippets/snippet_test.m";
@@ -184,6 +187,17 @@ public class Main  extends Application {
 
     @Override
     public void start(final Stage primaryStage) {
+        final KeyCombination keyCombinationShiftC = new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_DOWN);
+        final BooleanProperty spacePressed = new SimpleBooleanProperty(false);
+        final BooleanProperty rightPressed = new SimpleBooleanProperty(false);
+        final BooleanBinding spaceAndRightPressed = spacePressed.and(rightPressed);
+
+        final Clipboard clipboard = Clipboard.getSystemClipboard();
+        final ClipboardContent content = new ClipboardContent();
+//        content.putString("Some text");
+//        content.putHtml("<b>Some</b> text");
+//        clipboard.setContent(content);
+
         final ProcessList processList = new ProcessList(fName);
         List<List<String>> list2d = readCode(fName);
         Group root = new Group();
@@ -195,7 +209,6 @@ public class Main  extends Application {
         gridpane.setPadding(new Insets(5));
         gridpane.setHgap(40);
         gridpane.setVgap(2);
-
 
         final Alert alert = new Alert(AlertType.INFORMATION);
         alert.setTitle("Error");
@@ -260,26 +273,37 @@ public class Main  extends Application {
         comboboxSearch.getEditor().addEventFilter(KeyEvent.KEY_PRESSED, event -> {
             Print.pbl("KEY_PRESSED: KeyEvent       :=" + comboboxSearch.getEditor().getText());
 
+
             if (event.getCode() == KeyCode.ENTER) {
                 Print.pbl("ENTER KEY: selected item:=" + comboboxSearch.getEditor().getText());
                 comboboxSearch.getItems().clear();
                 comboboxSearch.hide();
-            }else if(event.getCode() == KeyCode.DOWN){
+            }else if(event.getCode() == KeyCode.DOWN) {
                 String prefix = comboboxSearch.getEditor().getText();
                 Print.pbl("DOWN KEY: selected item:=" + comboboxSearch.getEditor().getText());
 
-                if(!Strings.isNullOrEmpty(prefix)) {
+                if (!Strings.isNullOrEmpty(prefix)) {
                     Print.pbl("prefix=" + prefix);
                     Set<String> setWords = processList.prefixFullKeyMap.get(prefix);
-                    if(setWords != null && setWords.size() > 0) {
+                    if (setWords != null && setWords.size() > 0) {
                         comboboxSearch.getItems().addAll(new ArrayList(setWords));
-                        if(!comboboxSearch.isShowing()) {
+                        if (!comboboxSearch.isShowing()) {
                             comboboxSearch.show();
                         }
-                    }else{
+                    } else {
                         Print.pbl("prefix= is null or empty");
                     }
                 }
+            }else if(event.getCode() == KeyCode.RIGHT) {
+                Print.pbl("right key");
+            }else if(event.getCode() == KeyCode.LEFT) {
+                Print.pbl("left key");
+            }else if(event.getCode() == KeyCode.UP) {
+                Print.pbl("up key");
+            }else if(event.getCode() == KeyCode.TAB) {
+                Print.pbl("tab key");
+                content.putString(textAreaFile.getText());
+                clipboard.setContent(content);
             }else{
                 Print.pbl("line 342");
 
@@ -303,10 +327,23 @@ public class Main  extends Application {
             }
         });
 
+        comboboxSearch.setOnKeyPressed(new EventHandler<KeyEvent>() {
+            @Override
+            public void handle(KeyEvent event) {
+                if (keyCombinationShiftC.match(event)) {
+
+                    Print.pbl("CTRL + C Pressed");
+
+                }
+            }
+        });
+
+
         gridpane.add(vboxComboboxSearch, 0, 0);
         gridpane.add(vboxTextFieldFile, 1, 0);
 
-        primaryStage.setScene(new Scene(gridpane, comboboxWith + textFieldWidth, textFieldHeight));
+        Scene scene = new Scene(gridpane, comboboxWith + textFieldWidth, textFieldHeight);
+        primaryStage.setScene(scene);
         primaryStage.show();
 
         //test2();
@@ -353,6 +390,7 @@ public class Main  extends Application {
         final int MaxBuf = 200;
         List<String> list = Aron.readFileLineByte(fName, MaxBuf);
         List<List<String>> list2d = new ArrayList<>();
+
 
         List<String> line = new ArrayList<>();
         for(String s : list){
