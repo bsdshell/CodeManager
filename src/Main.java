@@ -4,8 +4,10 @@ import classfile.Ut;
 import com.google.common.base.Strings;
 import javafx.application.Application;
 import javafx.beans.binding.BooleanBinding;
+import javafx.beans.binding.StringBinding;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
@@ -18,26 +20,127 @@ import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.Alert.AlertType;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextArea;
 import javafx.scene.input.*;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 import javafx.stage.Stage;
 import org.controlsfx.control.textfield.AutoCompletionBinding;
 import org.controlsfx.control.textfield.TextFields;
 
+import javax.xml.soap.Text;
+import java.awt.*;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static com.google.common.base.Strings.nullToEmpty;
 import static java.awt.Event.ENTER;
+
+
+class ScrollFreeTextArea extends StackPane {
+
+    private Label label;
+    private TextArea textArea;
+    private Character enterChar = new Character((char) 10);
+    private Region content;
+    private SimpleDoubleProperty contentHeight = new SimpleDoubleProperty();
+
+    private final double NEW_LINE_HEIGHT = 18D;
+    private final double TOP_PADDING = 3D;
+    private final double BOTTOM_PADDING = 6D;
+
+    public ScrollFreeTextArea() {
+        super();
+        configure();
+    }
+
+    private void configure() {
+        setAlignment(Pos.TOP_LEFT);
+
+        this.textArea = new TextArea() {
+            @Override
+            protected void layoutChildren() {
+                super.layoutChildren();
+                if (content == null) {
+                    content = (Region) lookup(".content");
+                    contentHeight.bind(content.heightProperty());
+                    content.heightProperty().addListener(new ChangeListener<Number>() {
+                        @Override
+                        public void changed(ObservableValue<? extends Number> paramObservableValue, Number paramT1, Number paramT2) {
+                            //System.out.println("Content View Height :"+paramT2.doubleValue());
+                        }
+                    });
+                }
+            };
+        };
+        this.textArea.setWrapText(true);
+
+        this.label = new Label();
+        this.label.setWrapText(true);
+        this.label.prefWidthProperty().bind(this.textArea.widthProperty());
+        label.textProperty().bind(new StringBinding() {
+            {
+                bind(textArea.textProperty());
+            }
+            @Override
+            protected String computeValue() {
+                if (textArea.getText() != null && textArea.getText().length() > 0) {
+                    if (!((Character)textArea.getText().charAt(textArea.getText().length() - 1)).equals(enterChar)) {
+                        return textArea.getText() + enterChar;
+                    }
+                }
+                return textArea.getText();
+            }
+        });
+
+        StackPane lblContainer = StackPaneBuilder.create()
+                .alignment(Pos.TOP_LEFT)
+                .padding(new Insets(4, 7, 7, 7))
+                .children(label)
+                .build();
+        // Binding the container width/height to the TextArea width.
+        lblContainer.maxWidthProperty().bind(textArea.widthProperty());
+
+        textArea.textProperty().addListener(new ChangeListener<String>() {
+            @Override
+            public void changed(ObservableValue<? extends String> paramObservableValue,	String paramT1, String value) {
+                layoutForNewLine(textArea.getText());
+            }
+        });
+
+        label.heightProperty().addListener(new ChangeListener<Number>() {
+            @Override
+            public void changed(ObservableValue<? extends Number> paramObservableValue,	Number paramT1, Number paramT2) {
+                layoutForNewLine(textArea.getText());
+            }
+        });
+
+        getChildren().addAll(lblContainer, textArea);
+    }
+
+    private void layoutForNewLine(String text){
+        if (text != null && text.length() > 0 && ((Character)text.charAt(text.length() - 1)).equals(enterChar)) {
+            textArea.setPrefHeight(label.getHeight() + NEW_LINE_HEIGHT + TOP_PADDING + BOTTOM_PADDING);
+            textArea.setMinHeight(textArea.getPrefHeight());
+        }
+        else {
+            textArea.setPrefHeight(label.getHeight() + TOP_PADDING + BOTTOM_PADDING);
+            textArea.setMinHeight(textArea.getPrefHeight());
+        }
+    }
+
+    public TextArea getTextArea() {
+        return textArea;
+    }
+
+}
 
 
 /**
@@ -213,6 +316,8 @@ public class Main  extends Application {
         final Alert alert = new Alert(AlertType.INFORMATION);
         alert.setTitle("Error");
 
+        List<ScrollFreeTextArea> textAreaList = new ArrayList<>();
+
         final TextArea textAreaFile = new TextArea();
         textAreaFile.setPrefWidth(textFieldWidth);
 
@@ -233,7 +338,7 @@ public class Main  extends Application {
 
         vboxTextFieldFile.setAlignment(Pos.TOP_CENTER);
         vboxTextFieldFile.setPadding(new Insets(1, 1, 1, 1));
-        vboxTextFieldFile.getChildren().add(textAreaFile);
+//        vboxTextFieldFile.getChildren().add(textAreaFile);
 
         comboboxSearch.getSelectionModel().selectedItemProperty().addListener(new ChangeListener() {
             @Override
@@ -248,14 +353,20 @@ public class Main  extends Application {
                 if(current != null && !Strings.isNullOrEmpty((String)current)) {
                     List<List<String>> lists = processList.mapList.get(current);
                     if(lists != null && lists.size() > 0) {
+                        vboxTextFieldFile.getChildren().clear();
                         textAreaFile.clear();
                         textAreaFile.appendText("----------------------------------\n");
                         for (List<String> list : lists) {
+                            ScrollFreeTextArea textArea = new ScrollFreeTextArea();
                             for (String s : list) {
                                 textAreaFile.appendText(s + "\n");
+                                textArea.getTextArea().appendText(s + "\n");
                                 Print.pbl("s=" + s);
                             }
+                            textArea.setPrefHeight(300);
                             textAreaFile.appendText("----------------------------------\n");
+                            textAreaList.add(textArea);
+                            vboxTextFieldFile.getChildren().add(textArea);
                         }
                     }
                 }else{
@@ -272,7 +383,6 @@ public class Main  extends Application {
 
         comboboxSearch.getEditor().addEventFilter(KeyEvent.KEY_PRESSED, event -> {
             Print.pbl("KEY_PRESSED: KeyEvent       :=" + comboboxSearch.getEditor().getText());
-
 
             if (event.getCode() == KeyCode.ENTER) {
                 Print.pbl("ENTER KEY: selected item:=" + comboboxSearch.getEditor().getText());
