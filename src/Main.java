@@ -21,6 +21,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.input.*;
 import javafx.scene.layout.*;
@@ -305,6 +306,8 @@ public class Main  extends Application {
         List<List<String>> list2d = readCode(fName);
         Group root = new Group();
 
+        final ScrollPane scrollPane = new ScrollPane();
+
         final double textFieldWidth = 600;
         final double textFieldHeight = 600;
         final double comboboxWith = 300;
@@ -331,6 +334,7 @@ public class Main  extends Application {
         vboxComboboxSearch.getChildren().add(comboboxSearch);
 
         VBox vboxTextFieldFile = new VBox();
+        VBox.setVgrow(scrollPane, Priority.ALWAYS);
         VBox.setVgrow(textAreaFile, Priority.ALWAYS);
 
         vboxTextFieldFile.setPrefWidth(textFieldWidth);
@@ -449,8 +453,14 @@ public class Main  extends Application {
         });
 
 
+
+
         gridpane.add(vboxComboboxSearch, 0, 0);
-        gridpane.add(vboxTextFieldFile, 1, 0);
+
+        scrollPane.setVmax(600);
+        scrollPane.setPrefSize(700, 600);
+        scrollPane.setContent(vboxTextFieldFile);
+        gridpane.add(scrollPane, 1, 0);
 
         Scene scene = new Scene(gridpane, comboboxWith + textFieldWidth, textFieldHeight);
         primaryStage.setScene(scene);
