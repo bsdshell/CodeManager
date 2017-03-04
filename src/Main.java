@@ -2,6 +2,7 @@ import classfile.Aron;
 import classfile.Print;
 import classfile.Ut;
 import com.google.common.base.Strings;
+import com.sun.javafx.tk.*;
 import javafx.application.Application;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.binding.StringBinding;
@@ -31,6 +32,7 @@ import org.controlsfx.control.textfield.TextFields;
 
 import javax.xml.soap.Text;
 import java.awt.*;
+import java.awt.Toolkit;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -403,7 +405,9 @@ public class Main  extends Application {
         final Alert alert = new Alert(AlertType.INFORMATION);
         alert.setTitle("Error");
 
-        List<ScrollFreeTextArea> textAreaList = new ArrayList<>();
+//        List<ScrollFreeTextArea> textAreaList = new ArrayList<>();
+        List<TextArea> textAreaList = new ArrayList<>();
+
 
         final ComboBox<String> comboboxSearch = new ComboBox<>();
         comboboxSearch.setEditable(true);
@@ -434,9 +438,9 @@ public class Main  extends Application {
 
 
 
-        comboboxSearch.getSelectionModel().selectedItemProperty().addListener(new ChangeListener() {
+        comboboxSearch.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<String>() {
             @Override
-            public void changed(ObservableValue obValue, Object previous, Object current) {
+            public void changed(ObservableValue<? extends String> obValue, String previous, String current) {
                 Print.pbl("Time to change!");
                 Print.pbl("timetochange: current item:=" + comboboxSearch.getEditor().getText());
                 Print.pbl("obValue=" + obValue);
@@ -451,21 +455,24 @@ public class Main  extends Application {
                         textAreaList.clear();
                         int first = 0;
                         for (List<String> list : lists) {
-                            ScrollFreeTextArea textArea = new ScrollFreeTextArea();
+//                            ScrollFreeTextArea textArea = new ScrollFreeTextArea();
+                            TextArea textArea = new TextArea();
+                            textArea.setFont(javafx.scene.text.Font.font(Font.MONOSPACED));
                             for(int i=1; i<list.size(); i++){
                                 String line = list.get(i) + "\n";
-                                textArea.getTextArea().appendText(line);
+//                                textArea.getTextArea().appendText(line);
+                                textArea.appendText(line);
                                 Print.pbl("s=" + list.get(i));
                             }
-                            textArea.setPrefHeight(300);
-                            textArea.setPrefWidth(textFieldWidth);
+//                            textArea.setPrefHeight(300);
+//                            textArea.setPrefWidth(textFieldWidth);
 
 
                             vboxTextFieldFile.getChildren().add(textArea);
                             textAreaList.add(textArea);
-
                         }
-                        content.putString(textAreaList.get(0).getTextArea().getText());
+                        //content.putString(textAreaList.get(0).getTextArea().getText());
+                        content.putString(textAreaList.get(0).getText());
                         clipboard.setContent(content);
                     }
                 }else{
@@ -479,9 +486,9 @@ public class Main  extends Application {
             }
         });
 
-        comboboxKeyWord.getSelectionModel().selectedItemProperty().addListener(new ChangeListener() {
+        comboboxKeyWord.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<String>() {
             @Override
-            public void changed(ObservableValue obValue, Object previous, Object current) {
+            public void changed(ObservableValue<? extends String> obValue, String previous, String current) {
                 Print.pbl("Time to change!");
                 Print.pbl("timetochange: current item:=" + comboboxKeyWord.getEditor().getText());
                 Print.pbl("obValue=" + obValue);
@@ -495,21 +502,26 @@ public class Main  extends Application {
                         vboxTextFieldFile.getChildren().clear();
                         textAreaList.clear();
                         for (List<String> list : setCode) {
-                            ScrollFreeTextArea textArea = new ScrollFreeTextArea();
+//                            ScrollFreeTextArea textArea = new ScrollFreeTextArea();
+                            TextArea textArea = new TextArea();
+                            textArea.setFont(javafx.scene.text.Font.font(Font.MONOSPACED));
+
                             for(int i=0; i<list.size(); i++){
                                 String line = list.get(i) + "\n";
-                                textArea.getTextArea().appendText(line);
+//                                textArea.getTextArea().appendText(line);
+                                textArea.appendText(line);
                                 Print.pbl("s=" + list.get(i));
                             }
-                            textArea.setPrefHeight(300);
-                            textArea.setPrefWidth(textFieldWidth);
+//                            textArea.setPrefHeight(300);
+//                            textArea.setPrefWidth(textFieldWidth);
 
 
                             vboxTextFieldFile.getChildren().add(textArea);
                             textAreaList.add(textArea);
 
                         }
-                        content.putString(textAreaList.get(0).getTextArea().getText());
+//                        content.putString(textAreaList.get(0).getTextArea().getText());
+                        content.putString(textAreaList.get(0).getText());
                         clipboard.setContent(content);
                     }
                 }else{
@@ -528,7 +540,6 @@ public class Main  extends Application {
 
             if (event.getCode() == KeyCode.ENTER) {
                 Print.pbl("ENTER KEY: selected item:=" + comboboxKeyWord.getEditor().getText());
-                //comboboxKeyWord.getItems().clear();
                 comboboxKeyWord.hide();
             }else if(event.getCode() == KeyCode.DOWN) {
                 if(comboboxKeyWord.getItems().size() > 0){
@@ -668,9 +679,13 @@ public class Main  extends Application {
         scrollPane.setContent(vboxTextFieldFile);
         gridpane.add(scrollPane, 1, 0);
 
+
+
+
         Scene scene = new Scene(gridpane, comboboxWith + textFieldWidth, textFieldHeight);
         primaryStage.setScene(scene);
         primaryStage.show();
+
 
         //test2();
 //      test5();
