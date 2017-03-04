@@ -153,8 +153,8 @@ final class ProcessList {
     Map<String, Set<String>> prefixSuffixMap = new HashMap<>();
     Map<String, List<List<String>>> mapList = new HashMap<>();
     Map<String, Set<String>> prefixFullKeyMap = new HashMap<>();
-
-
+    Map<String, Set<List<String>>> prefixWordMap = new HashMap<>();
+    Map<String, Set<String>> wordsCompletion = new HashMap<>();
 
     public ProcessList(String fName) {
 //        String fName = "/Users/cat/myfile/github/snippets/snippet_test.m";
@@ -214,13 +214,25 @@ final class ProcessList {
                 List<String> splitKeys = Aron.split(list.get(0), ":");
                 if(splitKeys.size() > 0){
 
-                    String key = splitKeys.get(0).trim();
-                    Print.pbl("key=" + key);
+                    String abbreviation = splitKeys.get(0).trim();
+                    Print.pbl("key=" + abbreviation);
 
-                    listKeys.add(key);
+                    if(splitKeys.size() > 2) {
+                        Map<String, Set<List<String>>> oneBlockMap = prefixWordMap(splitKeys.get(2).trim(), list);
+                        prefixWordMap = Aron.mergeMapSet(prefixWordMap, oneBlockMap);
+                    }
 
-                    for(int i=0; i<key.length(); i++){
-                        String prefix = key.substring(0, i+1);
+                    listKeys.add(abbreviation);
+
+                    // Given a string as abbreviation , generate all prefixes as keys,
+                    // use abbreviation as value to create a map: mapList. <prefix, abbreviation>
+                    //
+                    // Example:
+                    // key = "cmd"
+                    // mapList = c->[cmd], cm->[cmd], cmd->[cmd]
+                    //
+                    for(int i=0; i<abbreviation.length(); i++){
+                        String prefix = abbreviation.substring(0, i+1);
                         Print.pbl("prefix=" + prefix);
                         List<List<String>> values = mapList.get(prefix);
 
@@ -276,6 +288,78 @@ final class ProcessList {
         }
         return map;
     }
+
+    /**
+     *
+     * @param str is separated by comma(,) and contains keywords that is used to search
+     * @param listCode contains code that we want to show.
+     * @return
+     */
+    private Map<String, Set<List<String>>> prefixWordMap(String str, List<String> listCode){
+        Map<String, Set<List<String>>> mapSet = new HashMap<>();
+
+        if(listCode.size() > 1) {
+            List<String> list = Aron.splitTrim(str, ",");
+            for (String words : list) {
+                //
+                // map: prefixes -> abbreviation
+                // Example: keyWords= "vi cmd"
+                // "v" -> "vi cmd"
+                // "vi" -> "vi cmd"
+                // "vi " -> "vi cmd"
+                // "vi c" -> "vi cmd"
+                // "vi cm" -> "vi cmd"
+                // "vi cmd" -> "vi cmd"
+                //
+                for(int i=0; i<words.length(); i++){
+                    String prefix = words.substring(0, i+1);
+                    Set<String> value = wordsCompletion.get(prefix);
+                    if(value != null ){
+                        value.add(words);
+                    }else{
+                        Set<String> set = new HashSet<>();
+                        set.add(words);
+                        wordsCompletion.put(prefix, set);
+                    }
+                }
+
+                List<String> listWord = Aron.split(words, "\\s+");
+                String prefixKey = "";
+                for (int i = 0; i < listWord.size(); i++) {
+                    prefixKey = prefixKey + " " + listWord.get(i);
+                    prefixKey = prefixKey.trim();
+                    Set<List<String>> value = mapSet.get(prefixKey);
+                    if (value != null) {
+                        value.add(listCode.subList(1, listCode.size()));
+
+                        mapSet.put(prefixKey, value);
+                    } else {
+                        Set<List<String>> tmpSet = new HashSet<>();
+
+                        tmpSet.add(listCode.subList(1, listCode.size()));
+                        mapSet.put(prefixKey, tmpSet);
+
+                    }
+                    Print.pbl("------------------");
+                }
+                Print.pbl("==============");
+
+            }
+        }else{
+            Print.pbl("ERROR: invalid file format. listCode.size()=" + listCode.size());
+        }
+        return mapSet;
+    }
+
+    public List<String> mergeList(List<String> list1, List<String> list2){
+        Set<String> set = new HashSet<>();
+        for(String s : list1)
+            set.add(s);
+        for(String s : list2)
+            set.add(s);
+
+        return new ArrayList<>(set);
+    }
 }
 
 
@@ -321,28 +405,34 @@ public class Main  extends Application {
 
         List<ScrollFreeTextArea> textAreaList = new ArrayList<>();
 
-        final TextArea textAreaFile = new TextArea();
-        textAreaFile.setPrefWidth(textFieldWidth);
-
         final ComboBox<String> comboboxSearch = new ComboBox<>();
         comboboxSearch.setEditable(true);
         comboboxSearch.setPrefWidth(300);
 
+        final ComboBox<String> comboboxKeyWord = new ComboBox<>();
+        comboboxKeyWord.setEditable(true);
+        comboboxKeyWord.setPrefWidth(300);
+
+
         VBox vboxComboboxSearch = new VBox();
         vboxComboboxSearch.setAlignment(Pos.TOP_CENTER);
-        vboxComboboxSearch.setSpacing(10);
+        vboxComboboxSearch.setSpacing(4);
         vboxComboboxSearch.getChildren().add(comboboxSearch);
+        vboxComboboxSearch.getChildren().add(comboboxKeyWord);
 
         VBox vboxTextFieldFile = new VBox();
-        VBox.setVgrow(scrollPane, Priority.ALWAYS);
-        VBox.setVgrow(textAreaFile, Priority.ALWAYS);
 
+        VBox.setVgrow(scrollPane, Priority.ALWAYS);
+        vboxTextFieldFile.setSpacing(4);
         vboxTextFieldFile.setPrefWidth(textFieldWidth);
         vboxTextFieldFile.setPrefHeight(textFieldHeight);
 
         vboxTextFieldFile.setAlignment(Pos.TOP_CENTER);
-        vboxTextFieldFile.setPadding(new Insets(1, 1, 1, 1));
-//        vboxTextFieldFile.getChildren().add(textAreaFile);
+        vboxTextFieldFile.setPadding(new Insets(1, 1, 10, 1));
+
+
+
+
 
         comboboxSearch.getSelectionModel().selectedItemProperty().addListener(new ChangeListener() {
             @Override
@@ -358,20 +448,25 @@ public class Main  extends Application {
                     List<List<String>> lists = processList.mapList.get(current);
                     if(lists != null && lists.size() > 0) {
                         vboxTextFieldFile.getChildren().clear();
-                        textAreaFile.clear();
-                        textAreaFile.appendText("----------------------------------\n");
+                        textAreaList.clear();
+                        int first = 0;
                         for (List<String> list : lists) {
                             ScrollFreeTextArea textArea = new ScrollFreeTextArea();
-                            for (String s : list) {
-                                textAreaFile.appendText(s + "\n");
-                                textArea.getTextArea().appendText(s + "\n");
-                                Print.pbl("s=" + s);
+                            for(int i=1; i<list.size(); i++){
+                                String line = list.get(i) + "\n";
+                                textArea.getTextArea().appendText(line);
+                                Print.pbl("s=" + list.get(i));
                             }
                             textArea.setPrefHeight(300);
-                            textAreaFile.appendText("----------------------------------\n");
-                            textAreaList.add(textArea);
+                            textArea.setPrefWidth(textFieldWidth);
+
+
                             vboxTextFieldFile.getChildren().add(textArea);
+                            textAreaList.add(textArea);
+
                         }
+                        content.putString(textAreaList.get(0).getTextArea().getText());
+                        clipboard.setContent(content);
                     }
                 }else{
                     if(current == null){
@@ -384,28 +479,142 @@ public class Main  extends Application {
             }
         });
 
+        comboboxKeyWord.getSelectionModel().selectedItemProperty().addListener(new ChangeListener() {
+            @Override
+            public void changed(ObservableValue obValue, Object previous, Object current) {
+                Print.pbl("Time to change!");
+                Print.pbl("timetochange: current item:=" + comboboxKeyWord.getEditor().getText());
+                Print.pbl("obValue=" + obValue);
+                Print.pbl("previous=" + previous);
+                Print.pbl("current=" + current);
+                Print.pbl("Time to change2!");
+
+                if(current != null && !Strings.isNullOrEmpty((String)current)) {
+                    Set<List<String>> setCode = processList.prefixWordMap.get(current);
+                    if(setCode != null && setCode.size() > 0) {
+                        vboxTextFieldFile.getChildren().clear();
+                        textAreaList.clear();
+                        for (List<String> list : setCode) {
+                            ScrollFreeTextArea textArea = new ScrollFreeTextArea();
+                            for(int i=0; i<list.size(); i++){
+                                String line = list.get(i) + "\n";
+                                textArea.getTextArea().appendText(line);
+                                Print.pbl("s=" + list.get(i));
+                            }
+                            textArea.setPrefHeight(300);
+                            textArea.setPrefWidth(textFieldWidth);
+
+
+                            vboxTextFieldFile.getChildren().add(textArea);
+                            textAreaList.add(textArea);
+
+                        }
+                        content.putString(textAreaList.get(0).getTextArea().getText());
+                        clipboard.setContent(content);
+                    }
+                }else{
+                    if(current == null){
+                        Print.pbl("current is null");
+                    }else {
+                        Print.pbl("current is not null");
+                    }
+                    Print.pbl("ERROR: current=" + current);
+                }
+            }
+        });
+
+        comboboxKeyWord.getEditor().addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            Print.pbl("KEY_PRESSED: KeyEvent       :=" + comboboxKeyWord.getEditor().getText());
+
+            if (event.getCode() == KeyCode.ENTER) {
+                Print.pbl("ENTER KEY: selected item:=" + comboboxKeyWord.getEditor().getText());
+                //comboboxKeyWord.getItems().clear();
+                comboboxKeyWord.hide();
+            }else if(event.getCode() == KeyCode.DOWN) {
+                if(comboboxKeyWord.getItems().size() > 0){
+                    if(!comboboxKeyWord.isShowing()){
+                        comboboxKeyWord.show();
+                    }
+                }else {
+                    String prefix = comboboxKeyWord.getEditor().getText();
+                    Print.pbl("DOWN KEY: selected item:=" + comboboxKeyWord.getEditor().getText());
+
+                    if (!Strings.isNullOrEmpty(prefix)) {
+                        Print.pbl("prefix=" + prefix);
+                        Set<String> setWords = processList.wordsCompletion.get(prefix);
+                        if (setWords != null && setWords.size() > 0) {
+                            comboboxKeyWord.getItems().addAll(new ArrayList(setWords));
+                            if (!comboboxKeyWord.isShowing()) {
+                                comboboxKeyWord.show();
+                            }
+                        } else {
+                            Print.pbl("prefix= is null or empty");
+                        }
+                    }
+                }
+            }else if(event.getCode() == KeyCode.SPACE) {
+                Print.pbl("space bar");
+            }else if(event.getCode() == KeyCode.RIGHT) {
+                Print.pbl("right key");
+            }else if(event.getCode() == KeyCode.LEFT) {
+                Print.pbl("left key");
+            }else if(event.getCode() == KeyCode.UP) {
+                Print.pbl("up key");
+            }else if(event.getCode() == KeyCode.TAB) {
+                Print.pbl("tab key");
+                clipboard.setContent(content);
+            }else{
+                Print.pbl("getEditor().getText()=" + comboboxKeyWord.getEditor().getText());
+                Print.pbl("      event.getText()=" + event.getText());
+                Print.pbl(" event.getCharacter()=" + event.getCharacter());
+
+                String input = comboboxKeyWord.getEditor().getText() + event.getText();
+                if (!Strings.isNullOrEmpty(input)) {
+                    Print.pbl("input=" + input);
+                    Set<String> setWords = processList.wordsCompletion.get(input);
+                    if (setWords != null && setWords.size() > 0) {
+                        comboboxKeyWord.getItems().clear();
+                        comboboxKeyWord.getItems().addAll(new ArrayList(setWords));
+                        if (!comboboxKeyWord.isShowing()) {
+                            comboboxKeyWord.show();
+                        }
+                    } else {
+                        Print.pbl("input= is null or empty");
+                        comboboxKeyWord.getItems().clear();
+                        comboboxKeyWord.hide();
+                    }
+                }
+            }
+        });
+
 
         comboboxSearch.getEditor().addEventFilter(KeyEvent.KEY_PRESSED, event -> {
             Print.pbl("KEY_PRESSED: KeyEvent       :=" + comboboxSearch.getEditor().getText());
 
             if (event.getCode() == KeyCode.ENTER) {
                 Print.pbl("ENTER KEY: selected item:=" + comboboxSearch.getEditor().getText());
-                comboboxSearch.getItems().clear();
+                //comboboxSearch.getItems().clear();
                 comboboxSearch.hide();
             }else if(event.getCode() == KeyCode.DOWN) {
-                String prefix = comboboxSearch.getEditor().getText();
-                Print.pbl("DOWN KEY: selected item:=" + comboboxSearch.getEditor().getText());
+                if(comboboxSearch.getItems().size() > 0){
+                    if(!comboboxSearch.isShowing()) {
+                        comboboxSearch.show();
+                    }
+                }else {
+                    String prefix = comboboxSearch.getEditor().getText();
+                    Print.pbl("DOWN KEY: selected item:=" + comboboxSearch.getEditor().getText());
 
-                if (!Strings.isNullOrEmpty(prefix)) {
-                    Print.pbl("prefix=" + prefix);
-                    Set<String> setWords = processList.prefixFullKeyMap.get(prefix);
-                    if (setWords != null && setWords.size() > 0) {
-                        comboboxSearch.getItems().addAll(new ArrayList(setWords));
-                        if (!comboboxSearch.isShowing()) {
-                            comboboxSearch.show();
+                    if (!Strings.isNullOrEmpty(prefix)) {
+                        Print.pbl("prefix=" + prefix);
+                        Set<String> setWords = processList.prefixFullKeyMap.get(prefix);
+                        if (setWords != null && setWords.size() > 0) {
+                            comboboxSearch.getItems().addAll(new ArrayList(setWords));
+                            if (!comboboxSearch.isShowing()) {
+                                comboboxSearch.show();
+                            }
+                        } else {
+                            Print.pbl("prefix= is null or empty");
                         }
-                    } else {
-                        Print.pbl("prefix= is null or empty");
                     }
                 }
             }else if(event.getCode() == KeyCode.RIGHT) {
@@ -416,12 +625,12 @@ public class Main  extends Application {
                 Print.pbl("up key");
             }else if(event.getCode() == KeyCode.TAB) {
                 Print.pbl("tab key");
-                content.putString(textAreaFile.getText());
                 clipboard.setContent(content);
             }else{
                 Print.pbl("line 342");
 
                 //  input = dog = do + g
+
                 String input = comboboxSearch.getEditor().getText() + event.getText();
                 if (!Strings.isNullOrEmpty(input)) {
                     Print.pbl("input=" + input);
@@ -452,13 +661,10 @@ public class Main  extends Application {
             }
         });
 
-
-
-
         gridpane.add(vboxComboboxSearch, 0, 0);
-
+        scrollPane.setFitToWidth(true);
         scrollPane.setVmax(600);
-        scrollPane.setPrefSize(700, 600);
+        scrollPane.setPrefSize(600, 600);
         scrollPane.setContent(vboxTextFieldFile);
         gridpane.add(scrollPane, 1, 0);
 
@@ -497,8 +703,6 @@ public class Main  extends Application {
         }
         return null;
     }
-
-
 
     /**
      * read the contents of file and store it in a two dimension array
@@ -573,6 +777,32 @@ public class Main  extends Application {
 
         return map;
     }
+
+//    public static void prefixWordMap(String str, List<String> listCode){
+//        List<String> list = Aron.split(str, ",");
+//        Map<String, List<List<String>>> map = new HashMap<>();
+//        for(String s : list){
+//            List<String> listWord = Aron.split(s, "\\s+");
+//            String prefixKey = "";
+//            for(int i=0; i<listWord.size(); i++){
+//                prefixKey = prefixKey + " " + listWord.get(i);
+//                prefixKey = prefixKey.trim();
+//                List<List<String>> value = map.get(prefixKey);
+//                if(value != null){
+//                    value.add(Arrays.asList("Snap worth of 27.8 billion"));
+//                    map.put(prefixKey, value);
+//                }else{
+//                    List<List<String>> tmpLists = new ArrayList<>();
+//                    tmpLists.add(Arrays.asList("make sense, does't make sense, do beyond yourself"));
+//                    map.put(prefixKey, tmpLists);
+//
+//                }
+//                Print.pbl("------------------");
+//            }
+//            Print.pbl("==============");
+//
+//        }
+//    }
 
     /**
      * Test the getCurrentDir method
