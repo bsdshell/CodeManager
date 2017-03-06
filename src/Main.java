@@ -1,44 +1,31 @@
+
 import classfile.Aron;
 import classfile.Print;
 import classfile.Ut;
 import com.google.common.base.Strings;
-import com.sun.javafx.tk.*;
 import javafx.application.Application;
 import javafx.beans.binding.BooleanBinding;
-import javafx.beans.binding.StringBinding;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleDoubleProperty;
-import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.Alert.AlertType;
-import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.input.*;
 import javafx.scene.layout.*;
-import javafx.scene.paint.*;
 import javafx.scene.text.*;
 import javafx.stage.Stage;
-import jdk.nashorn.internal.ir.LiteralNode;
 import org.controlsfx.control.textfield.AutoCompletionBinding;
-import org.controlsfx.control.textfield.TextFields;
 
-import javax.xml.soap.Text;
-import java.awt.*;
-import java.awt.Color;
 import java.awt.Font;
-import java.awt.Toolkit;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -48,9 +35,6 @@ import java.util.*;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static com.google.common.base.Strings.nullToEmpty;
-import static java.awt.Event.ENTER;
 
 
 //class ScrollFreeTextArea extends StackPane {
@@ -165,23 +149,25 @@ class MyTextFlow extends TextFlow {
     }
     private void init(){
         dropShadow = new DropShadow();
-        dropShadow.setOffsetX(4);
-        dropShadow.setOffsetY(6);
-        dropShadow.setColor(javafx.scene.paint.Color.BLACK);
+        dropShadow.setOffsetX(2);
+        dropShadow.setOffsetY(4);
+        dropShadow.setColor(javafx.scene.paint.Color.GRAY);
 
         this.setStyle("-fx-background-color: gray;");
 
         textColor = javafx.scene.paint.Color.BLACK;
-        preWidth  = 100;
-        preHeight = 100;
-        setStyleStr = "-fx-background-color: cyan;";
+        preWidth  = 1000;
+        preHeight = 300;
+        setStyleStr = "-fx-background-color: white;";
+        setLineSpacing(4);
     }
     public MyTextFlow createTextFlow(){
         for(String s : list) {
-            javafx.scene.text.Text text = new javafx.scene.text.Text(s);
+            Text text = new Text(s + "\n");
             text.setFont(javafx.scene.text.Font.font(fontFamily, FontPosture.REGULAR, fontSize));
             text.setFill(textColor);
             text.setEffect(dropShadow);
+            text.setLineSpacing(100);
             getChildren().add(text);
         }
         setPrefSize(preWidth, preHeight);
@@ -490,24 +476,63 @@ public class Main  extends Application {
         vboxTextFieldFile.setAlignment(Pos.TOP_CENTER);
         vboxTextFieldFile.setPadding(new Insets(1, 1, 10, 1));
 
-
-
-
+//        comboboxSearch.getSelectionModel().selectedItemProperty().addListener((obValue, previous, current) -> {
+//            Print.pbl("timetochange: current item:=" + comboboxSearch.getEditor().getText());
+//            Print.pbl("obValue=" + obValue + " previous=" + previous + " current=" + current);
+//            if(current != null && !Strings.isNullOrEmpty(current)) {
+//                List<List<String>> lists = processList.mapList.get(current);
+//                if(lists != null && lists.size() > 0) {
+//                    vboxTextFieldFile.getChildren().clear();
+//                    textAreaList.clear();
+//                    for (List<String> list : lists) {
+////                            ScrollFreeTextArea textArea = new ScrollFreeTextArea();
+//                        TextArea textArea = new TextArea();
+//                        textArea.setFont(javafx.scene.text.Font.font(Font.MONOSPACED));
+//
+//                        // TODO: create one textFlow
+//                        for(int i=1; i<list.size(); i++){
+//                            String line = list.get(i) + "\n";
+////                                textArea.getTextArea().appendText(line);
+//                            textArea.appendText(line);
+//                            Print.pbl("s=" + list.get(i));
+//                        }
+//                        // TODO: add textFlow to vbox
+//
+//
+//                        vboxTextFieldFile.getChildren().add(textArea);
+//                        textAreaList.add(textArea);
+//                        int lineCount = textArea.getText().split("\n").length;
+//                        Print.pbl("lineCount=" + lineCount);
+//                        textArea.setPrefSize( Double.MAX_VALUE, lineHeight*(lineCount + 3) );
+//                    }
+//                    //content.putString(textAreaList.get(0).getTextArea().getText());
+//                    content.putString(textAreaList.get(0).getText());
+//                    clipboard.setContent(content);
+//                }
+//            }else{
+//                if(current == null){
+//                    Print.pbl("current is null");
+//                }else {
+//                    Print.pbl("current is not null");
+//                }
+//                Print.pbl("ERROR: current=" + current);
+//            }
+//        });
 
         comboboxSearch.getSelectionModel().selectedItemProperty().addListener((obValue, previous, current) -> {
             Print.pbl("timetochange: current item:=" + comboboxSearch.getEditor().getText());
             Print.pbl("obValue=" + obValue + " previous=" + previous + " current=" + current);
-
-
             if(current != null && !Strings.isNullOrEmpty(current)) {
                 List<List<String>> lists = processList.mapList.get(current);
                 if(lists != null && lists.size() > 0) {
                     vboxTextFieldFile.getChildren().clear();
                     textAreaList.clear();
                     for (List<String> list : lists) {
-//                            ScrollFreeTextArea textArea = new ScrollFreeTextArea();
+//                      ScrollFreeTextArea textArea = new ScrollFreeTextArea();
                         TextArea textArea = new TextArea();
                         textArea.setFont(javafx.scene.text.Font.font(Font.MONOSPACED));
+
+                        MyTextFlow myTextFlow = new MyTextFlow(list);
 
                         // TODO: create one textFlow
                         for(int i=1; i<list.size(); i++){
@@ -516,16 +541,20 @@ public class Main  extends Application {
                             textArea.appendText(line);
                             Print.pbl("s=" + list.get(i));
                         }
+
                         // TODO: add textFlow to vbox
 
-                        vboxTextFieldFile.getChildren().add(textArea);
+
+//                        vboxTextFieldFile.getChildren().add(textArea);
+
+                        vboxTextFieldFile.getChildren().add(new FlowPane(myTextFlow.createTextFlow()));
                         textAreaList.add(textArea);
                         int lineCount = textArea.getText().split("\n").length;
                         Print.pbl("lineCount=" + lineCount);
                         textArea.setPrefSize( Double.MAX_VALUE, lineHeight*(lineCount + 3) );
                     }
                     //content.putString(textAreaList.get(0).getTextArea().getText());
-                    content.putString(textAreaList.get(0).getText());
+                    content.putString(Aron.listToStringNewLine(lists.get(0)));
                     clipboard.setContent(content);
                 }
             }else{
@@ -537,6 +566,8 @@ public class Main  extends Application {
                 Print.pbl("ERROR: current=" + current);
             }
         });
+
+
 
         comboboxKeyWord.getSelectionModel().selectedItemProperty().addListener((ObservableValue<? extends String> obValue, String previous, String current) -> {
             Print.pbl("timetochange: current item:=" + comboboxKeyWord.getEditor().getText());
@@ -743,7 +774,6 @@ public class Main  extends Application {
         //test7();
         test8();
     }
-
     public static  List<String> fileSearch(List<String> list, String pattern){
         Map<String, String> map = new HashMap<>();
         Pattern pat = Pattern.compile(pattern);
