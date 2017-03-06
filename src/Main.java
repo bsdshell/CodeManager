@@ -24,14 +24,20 @@ import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
+import javafx.scene.effect.DropShadow;
 import javafx.scene.input.*;
 import javafx.scene.layout.*;
+import javafx.scene.paint.*;
+import javafx.scene.text.*;
 import javafx.stage.Stage;
+import jdk.nashorn.internal.ir.LiteralNode;
 import org.controlsfx.control.textfield.AutoCompletionBinding;
 import org.controlsfx.control.textfield.TextFields;
 
 import javax.xml.soap.Text;
 import java.awt.*;
+import java.awt.Color;
+import java.awt.Font;
 import java.awt.Toolkit;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
@@ -47,104 +53,142 @@ import static com.google.common.base.Strings.nullToEmpty;
 import static java.awt.Event.ENTER;
 
 
-class ScrollFreeTextArea extends StackPane {
+//class ScrollFreeTextArea extends StackPane {
+//
+//    private Label label;
+//    private TextArea textArea;
+//    private Character enterChar = new Character((char) 10);
+//    private Region content;
+//    private SimpleDoubleProperty contentHeight = new SimpleDoubleProperty();
+//
+//    private final double NEW_LINE_HEIGHT = 18D;
+//    private final double TOP_PADDING = 3D;
+//    private final double BOTTOM_PADDING = 6D;
+//
+//    public ScrollFreeTextArea() {
+//        super();
+//        configure();
+//    }
+//
+//    private void configure() {
+//        setAlignment(Pos.TOP_LEFT);
+//
+//        this.textArea = new TextArea() {
+//            @Override
+//            protected void layoutChildren() {
+//                super.layoutChildren();
+//                if (content == null) {
+//                    content = (Region) lookup(".content");
+//                    contentHeight.bind(content.heightProperty());
+//                    content.heightProperty().addListener(new ChangeListener<Number>() {
+//                        @Override
+//                        public void changed(ObservableValue<? extends Number> paramObservableValue, Number paramT1, Number paramT2) {
+//                            //System.out.println("Content View Height :"+paramT2.doubleValue());
+//                        }
+//                    });
+//                }
+//            };
+//        };
+//        this.textArea.setWrapText(true);
+//
+//        this.label = new Label();
+//        this.label.setWrapText(true);
+//        this.label.prefWidthProperty().bind(this.textArea.widthProperty());
+//        label.textProperty().bind(new StringBinding() {
+//            {
+//                bind(textArea.textProperty());
+//            }
+//            @Override
+//            protected String computeValue() {
+//                if (textArea.getText() != null && textArea.getText().length() > 0) {
+//                    if (!((Character)textArea.getText().charAt(textArea.getText().length() - 1)).equals(enterChar)) {
+//                        return textArea.getText() + enterChar;
+//                    }
+//                }
+//                return textArea.getText();
+//            }
+//        });
+//
+//        StackPane lblContainer = StackPaneBuilder.create()
+//                .alignment(Pos.TOP_LEFT)
+//                .padding(new Insets(4, 7, 7, 7))
+//                .children(label)
+//                .build();
+//        // Binding the container width/height to the TextArea width.
+//        lblContainer.maxWidthProperty().bind(textArea.widthProperty());
+//
+//        textArea.textProperty().addListener(new ChangeListener<String>() {
+//            @Override
+//            public void changed(ObservableValue<? extends String> paramObservableValue,	String paramT1, String value) {
+//                layoutForNewLine(textArea.getText());
+//            }
+//        });
+//
+//        label.heightProperty().addListener(new ChangeListener<Number>() {
+//            @Override
+//            public void changed(ObservableValue<? extends Number> paramObservableValue,	Number paramT1, Number paramT2) {
+//                layoutForNewLine(textArea.getText());
+//            }
+//        });
+//
+//        getChildren().addAll(lblContainer, textArea);
+//    }
+//
+//    private void layoutForNewLine(String text){
+//        if (text != null && text.length() > 0 && ((Character)text.charAt(text.length() - 1)).equals(enterChar)) {
+//            textArea.setPrefHeight(label.getHeight() + NEW_LINE_HEIGHT + TOP_PADDING + BOTTOM_PADDING);
+//            textArea.setMinHeight(textArea.getPrefHeight());
+//        }
+//        else {
+//            textArea.setPrefHeight(label.getHeight() + TOP_PADDING + BOTTOM_PADDING);
+//            textArea.setMinHeight(textArea.getPrefHeight());
+//        }
+//    }
+//
+//    public TextArea getTextArea() {
+//        return textArea;
+//    }
+//}
 
-    private Label label;
-    private TextArea textArea;
-    private Character enterChar = new Character((char) 10);
-    private Region content;
-    private SimpleDoubleProperty contentHeight = new SimpleDoubleProperty();
-
-    private final double NEW_LINE_HEIGHT = 18D;
-    private final double TOP_PADDING = 3D;
-    private final double BOTTOM_PADDING = 6D;
-
-    public ScrollFreeTextArea() {
-        super();
-        configure();
+class MyTextFlow extends TextFlow {
+    private String fontFamily = "Helvetica";
+    private double fontSize = 14;
+    private DropShadow dropShadow;
+    private javafx.scene.paint.Color textColor;
+    private double preWidth;
+    private double preHeight;
+    private String setStyleStr;
+    private List<String> list;
+    public MyTextFlow(List<String> list){
+        this.list = list;
+        init();
     }
+    private void init(){
+        dropShadow = new DropShadow();
+        dropShadow.setOffsetX(4);
+        dropShadow.setOffsetY(6);
+        dropShadow.setColor(javafx.scene.paint.Color.BLACK);
 
-    private void configure() {
-        setAlignment(Pos.TOP_LEFT);
+        this.setStyle("-fx-background-color: gray;");
 
-        this.textArea = new TextArea() {
-            @Override
-            protected void layoutChildren() {
-                super.layoutChildren();
-                if (content == null) {
-                    content = (Region) lookup(".content");
-                    contentHeight.bind(content.heightProperty());
-                    content.heightProperty().addListener(new ChangeListener<Number>() {
-                        @Override
-                        public void changed(ObservableValue<? extends Number> paramObservableValue, Number paramT1, Number paramT2) {
-                            //System.out.println("Content View Height :"+paramT2.doubleValue());
-                        }
-                    });
-                }
-            };
-        };
-        this.textArea.setWrapText(true);
-
-        this.label = new Label();
-        this.label.setWrapText(true);
-        this.label.prefWidthProperty().bind(this.textArea.widthProperty());
-        label.textProperty().bind(new StringBinding() {
-            {
-                bind(textArea.textProperty());
-            }
-            @Override
-            protected String computeValue() {
-                if (textArea.getText() != null && textArea.getText().length() > 0) {
-                    if (!((Character)textArea.getText().charAt(textArea.getText().length() - 1)).equals(enterChar)) {
-                        return textArea.getText() + enterChar;
-                    }
-                }
-                return textArea.getText();
-            }
-        });
-
-        StackPane lblContainer = StackPaneBuilder.create()
-                .alignment(Pos.TOP_LEFT)
-                .padding(new Insets(4, 7, 7, 7))
-                .children(label)
-                .build();
-        // Binding the container width/height to the TextArea width.
-        lblContainer.maxWidthProperty().bind(textArea.widthProperty());
-
-        textArea.textProperty().addListener(new ChangeListener<String>() {
-            @Override
-            public void changed(ObservableValue<? extends String> paramObservableValue,	String paramT1, String value) {
-                layoutForNewLine(textArea.getText());
-            }
-        });
-
-        label.heightProperty().addListener(new ChangeListener<Number>() {
-            @Override
-            public void changed(ObservableValue<? extends Number> paramObservableValue,	Number paramT1, Number paramT2) {
-                layoutForNewLine(textArea.getText());
-            }
-        });
-
-        getChildren().addAll(lblContainer, textArea);
+        textColor = javafx.scene.paint.Color.BLACK;
+        preWidth  = 100;
+        preHeight = 100;
+        setStyleStr = "-fx-background-color: cyan;";
     }
-
-    private void layoutForNewLine(String text){
-        if (text != null && text.length() > 0 && ((Character)text.charAt(text.length() - 1)).equals(enterChar)) {
-            textArea.setPrefHeight(label.getHeight() + NEW_LINE_HEIGHT + TOP_PADDING + BOTTOM_PADDING);
-            textArea.setMinHeight(textArea.getPrefHeight());
+    public MyTextFlow createTextFlow(){
+        for(String s : list) {
+            javafx.scene.text.Text text = new javafx.scene.text.Text(s);
+            text.setFont(javafx.scene.text.Font.font(fontFamily, FontPosture.REGULAR, fontSize));
+            text.setFill(textColor);
+            text.setEffect(dropShadow);
+            getChildren().add(text);
         }
-        else {
-            textArea.setPrefHeight(label.getHeight() + TOP_PADDING + BOTTOM_PADDING);
-            textArea.setMinHeight(textArea.getPrefHeight());
-        }
+        setPrefSize(preWidth, preHeight);
+        setStyle(setStyleStr);
+        return this;
     }
-
-    public TextArea getTextArea() {
-        return textArea;
-    }
-
 }
-
 
 /**
  * convert a text file to a two dimension list
@@ -152,7 +196,7 @@ class ScrollFreeTextArea extends StackPane {
  */
 final class ProcessList {
     private String fName;
-    Map<String, Set<String>> prefixSuffixMap = new HashMap<>();
+    private Map<String, Set<String>> prefixSuffixMap = new HashMap<>();
     Map<String, List<List<String>>> mapList = new HashMap<>();
     Map<String, Set<String>> prefixFullKeyMap = new HashMap<>();
     Map<String, Set<List<String>>> prefixWordMap = new HashMap<>();
@@ -292,10 +336,23 @@ final class ProcessList {
     }
 
     /**
+     * Example:
+     * jlist_list : * : java list, java cool
+     * my awesome code1
      *
-     * @param str is separated by comma(,) and contains keywords that is used to search
-     * @param listCode contains code that we want to show.
-     * @return
+     * str = "java list, java cool"
+     *
+     * listCode contains two lines
+     *
+     * @param str is used to generate prefixes
+     * @param listCode contains (code or string), including the first line
+     * @return map contains
+     *          {"j" -> listCode.sublist[1, listCode.size()]}
+     *          {"ja" -> listCode.sublist[1, listCode.size()]}
+     *          {"jav" -> listCode.sublist[1, listCode.size()]}
+     *          {"java" -> listCode.sublist[1, listCode.size()]}
+     *          {"java " -> listCode.sublist[1, listCode.size()]}
+     *          ...
      */
     private Map<String, Set<List<String>>> prefixWordMap(String str, List<String> listCode){
         Map<String, Set<List<String>>> mapSet = new HashMap<>();
@@ -327,8 +384,9 @@ final class ProcessList {
 
                 List<String> listWord = Aron.split(words, "\\s+");
                 String prefixKey = "";
-                for (int i = 0; i < listWord.size(); i++) {
-                    prefixKey = prefixKey + " " + listWord.get(i);
+
+                for(String word : listWord){
+                    prefixKey = prefixKey + " " + word;
                     prefixKey = prefixKey.trim();
                     Set<List<String>> value = mapSet.get(prefixKey);
                     if (value != null) {
@@ -345,7 +403,6 @@ final class ProcessList {
                     Print.pbl("------------------");
                 }
                 Print.pbl("==============");
-
             }
         }else{
             Print.pbl("ERROR: invalid file format. listCode.size()=" + listCode.size());
@@ -377,6 +434,7 @@ public class Main  extends Application {
 
     @Override
     public void start(final Stage primaryStage) {
+        final double lineHeight = 16.0;
         final KeyCombination keyCombinationShiftC = new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_DOWN);
         final BooleanProperty spacePressed = new SimpleBooleanProperty(false);
         final BooleanProperty rightPressed = new SimpleBooleanProperty(false);
@@ -384,21 +442,21 @@ public class Main  extends Application {
 
         final Clipboard clipboard = Clipboard.getSystemClipboard();
         final ClipboardContent content = new ClipboardContent();
-//        content.putString("Some text");
-//        content.putHtml("<b>Some</b> text");
-//        clipboard.setContent(content);
 
         final ProcessList processList = new ProcessList(fName);
         List<List<String>> list2d = readCode(fName);
         Group root = new Group();
 
         final ScrollPane scrollPane = new ScrollPane();
-
+        final double WINDOW_WIDTH = 1000;
+        final double WINDOW_HEIGHT = 800;
         final double textFieldWidth = 600;
         final double textFieldHeight = 600;
         final double comboboxWith = 300;
         GridPane gridpane = new GridPane();
         gridpane.setPadding(new Insets(5));
+        gridpane.setMaxSize(Region.USE_COMPUTED_SIZE, Region.USE_COMPUTED_SIZE);
+
         gridpane.setHgap(40);
         gridpane.setVgap(2);
 
@@ -428,8 +486,6 @@ public class Main  extends Application {
 
         VBox.setVgrow(scrollPane, Priority.ALWAYS);
         vboxTextFieldFile.setSpacing(4);
-        vboxTextFieldFile.setPrefWidth(textFieldWidth);
-        vboxTextFieldFile.setPrefHeight(textFieldHeight);
 
         vboxTextFieldFile.setAlignment(Pos.TOP_CENTER);
         vboxTextFieldFile.setPadding(new Insets(1, 1, 10, 1));
@@ -438,100 +494,96 @@ public class Main  extends Application {
 
 
 
-        comboboxSearch.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<String>() {
-            @Override
-            public void changed(ObservableValue<? extends String> obValue, String previous, String current) {
-                Print.pbl("Time to change!");
-                Print.pbl("timetochange: current item:=" + comboboxSearch.getEditor().getText());
-                Print.pbl("obValue=" + obValue);
-                Print.pbl("previous=" + previous);
-                Print.pbl("current=" + current);
-                Print.pbl("Time to change2!");
+        comboboxSearch.getSelectionModel().selectedItemProperty().addListener((obValue, previous, current) -> {
+            Print.pbl("timetochange: current item:=" + comboboxSearch.getEditor().getText());
+            Print.pbl("obValue=" + obValue + " previous=" + previous + " current=" + current);
 
-                if(current != null && !Strings.isNullOrEmpty((String)current)) {
-                    List<List<String>> lists = processList.mapList.get(current);
-                    if(lists != null && lists.size() > 0) {
-                        vboxTextFieldFile.getChildren().clear();
-                        textAreaList.clear();
-                        int first = 0;
-                        for (List<String> list : lists) {
+
+            if(current != null && !Strings.isNullOrEmpty(current)) {
+                List<List<String>> lists = processList.mapList.get(current);
+                if(lists != null && lists.size() > 0) {
+                    vboxTextFieldFile.getChildren().clear();
+                    textAreaList.clear();
+                    for (List<String> list : lists) {
 //                            ScrollFreeTextArea textArea = new ScrollFreeTextArea();
-                            TextArea textArea = new TextArea();
-                            textArea.setFont(javafx.scene.text.Font.font(Font.MONOSPACED));
-                            for(int i=1; i<list.size(); i++){
-                                String line = list.get(i) + "\n";
+                        TextArea textArea = new TextArea();
+                        textArea.setFont(javafx.scene.text.Font.font(Font.MONOSPACED));
+
+                        // TODO: create one textFlow
+                        for(int i=1; i<list.size(); i++){
+                            String line = list.get(i) + "\n";
 //                                textArea.getTextArea().appendText(line);
-                                textArea.appendText(line);
-                                Print.pbl("s=" + list.get(i));
-                            }
-//                            textArea.setPrefHeight(300);
-//                            textArea.setPrefWidth(textFieldWidth);
-
-
-                            vboxTextFieldFile.getChildren().add(textArea);
-                            textAreaList.add(textArea);
+                            textArea.appendText(line);
+                            Print.pbl("s=" + list.get(i));
                         }
-                        //content.putString(textAreaList.get(0).getTextArea().getText());
-                        content.putString(textAreaList.get(0).getText());
-                        clipboard.setContent(content);
+                        // TODO: add textFlow to vbox
+
+                        vboxTextFieldFile.getChildren().add(textArea);
+                        textAreaList.add(textArea);
+                        int lineCount = textArea.getText().split("\n").length;
+                        Print.pbl("lineCount=" + lineCount);
+                        textArea.setPrefSize( Double.MAX_VALUE, lineHeight*(lineCount + 3) );
                     }
-                }else{
-                    if(current == null){
-                        Print.pbl("current is null");
-                    }else {
-                        Print.pbl("current is not null");
-                    }
-                    Print.pbl("ERROR: current=" + current);
+                    //content.putString(textAreaList.get(0).getTextArea().getText());
+                    content.putString(textAreaList.get(0).getText());
+                    clipboard.setContent(content);
                 }
+            }else{
+                if(current == null){
+                    Print.pbl("current is null");
+                }else {
+                    Print.pbl("current is not null");
+                }
+                Print.pbl("ERROR: current=" + current);
             }
         });
 
-        comboboxKeyWord.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<String>() {
-            @Override
-            public void changed(ObservableValue<? extends String> obValue, String previous, String current) {
-                Print.pbl("Time to change!");
-                Print.pbl("timetochange: current item:=" + comboboxKeyWord.getEditor().getText());
-                Print.pbl("obValue=" + obValue);
-                Print.pbl("previous=" + previous);
-                Print.pbl("current=" + current);
-                Print.pbl("Time to change2!");
+        comboboxKeyWord.getSelectionModel().selectedItemProperty().addListener((ObservableValue<? extends String> obValue, String previous, String current) -> {
+            Print.pbl("timetochange: current item:=" + comboboxKeyWord.getEditor().getText());
+            Print.pbl("obValue=" + obValue + " previous=" + previous + " current=" + current);
 
-                if(current != null && !Strings.isNullOrEmpty((String)current)) {
-                    Set<List<String>> setCode = processList.prefixWordMap.get(current);
-                    if(setCode != null && setCode.size() > 0) {
-                        vboxTextFieldFile.getChildren().clear();
-                        textAreaList.clear();
-                        for (List<String> list : setCode) {
+
+            if(current != null && !Strings.isNullOrEmpty(current)) {
+                Set<List<String>> setCode = processList.prefixWordMap.get(current);
+                if(setCode != null && setCode.size() > 0) {
+                    vboxTextFieldFile.getChildren().clear();
+                    //-----------------------------------------------------------------
+                    // TODO: /Users/cat/myfile/github/java/TextAreaSimple
+                    // TODO: change textflow here
+
+                    textAreaList.clear();
+                    for (List<String> list : setCode) {
+
+                        // TODO: call method to pass list of string
 //                            ScrollFreeTextArea textArea = new ScrollFreeTextArea();
-                            TextArea textArea = new TextArea();
-                            textArea.setFont(javafx.scene.text.Font.font(Font.MONOSPACED));
+                        TextArea textArea = new TextArea();
+                        textArea.setFont(javafx.scene.text.Font.font(Font.MONOSPACED));
 
-                            for(int i=0; i<list.size(); i++){
-                                String line = list.get(i) + "\n";
-//                                textArea.getTextArea().appendText(line);
-                                textArea.appendText(line);
-                                Print.pbl("s=" + list.get(i));
-                            }
-//                            textArea.setPrefHeight(300);
-//                            textArea.setPrefWidth(textFieldWidth);
-
-
-                            vboxTextFieldFile.getChildren().add(textArea);
-                            textAreaList.add(textArea);
-
+                        for(String word : list){
+                            String line = word + "\n";
+                            textArea.appendText(line);
+                            Print.pbl("s=" + word);
                         }
-//                        content.putString(textAreaList.get(0).getTextArea().getText());
-                        content.putString(textAreaList.get(0).getText());
-                        clipboard.setContent(content);
+
+                        // TODO: return textflow or flowpane here
+                        vboxTextFieldFile.getChildren().add(textArea);
+                        textAreaList.add(textArea);
+                        int lineCount = textArea.getText().split("\n").length;
+                        Print.pbl("lineCount=" + lineCount);
+                        textArea.setPrefSize( Double.MAX_VALUE, lineHeight*(lineCount + 3) );
                     }
-                }else{
-                    if(current == null){
-                        Print.pbl("current is null");
-                    }else {
-                        Print.pbl("current is not null");
-                    }
-                    Print.pbl("ERROR: current=" + current);
+                    content.putString(textAreaList.get(0).getText());
+                    clipboard.setContent(content);
+                    //-----------------------------------------------------------------
+
                 }
+            }else{
+                if(current == null){
+                    Print.pbl("current is null");
+                }else {
+                    Print.pbl("current is not null");
+                }
+                Print.pbl("ERROR: current=" + current);
             }
         });
 
@@ -554,7 +606,7 @@ public class Main  extends Application {
                         Print.pbl("prefix=" + prefix);
                         Set<String> setWords = processList.wordsCompletion.get(prefix);
                         if (setWords != null && setWords.size() > 0) {
-                            comboboxKeyWord.getItems().addAll(new ArrayList(setWords));
+                            comboboxKeyWord.getItems().addAll(new ArrayList<>(setWords));
                             if (!comboboxKeyWord.isShowing()) {
                                 comboboxKeyWord.show();
                             }
@@ -585,7 +637,8 @@ public class Main  extends Application {
                     Set<String> setWords = processList.wordsCompletion.get(input);
                     if (setWords != null && setWords.size() > 0) {
                         comboboxKeyWord.getItems().clear();
-                        comboboxKeyWord.getItems().addAll(new ArrayList(setWords));
+                        List<String> list = new ArrayList<>(setWords);
+                        comboboxKeyWord.getItems().addAll(list);
                         if (!comboboxKeyWord.isShowing()) {
                             comboboxKeyWord.show();
                         }
@@ -619,7 +672,8 @@ public class Main  extends Application {
                         Print.pbl("prefix=" + prefix);
                         Set<String> setWords = processList.prefixFullKeyMap.get(prefix);
                         if (setWords != null && setWords.size() > 0) {
-                            comboboxSearch.getItems().addAll(new ArrayList(setWords));
+                            List<String> list = new ArrayList<>(setWords);
+                            comboboxSearch.getItems().addAll(list);
                             if (!comboboxSearch.isShowing()) {
                                 comboboxSearch.show();
                             }
@@ -648,7 +702,8 @@ public class Main  extends Application {
                     Set<String> setWords = processList.prefixFullKeyMap.get(input);
                     if (setWords != null && setWords.size() > 0) {
                         comboboxSearch.getItems().clear();
-                        comboboxSearch.getItems().addAll(new ArrayList(setWords));
+                        List<String> list = new ArrayList<>(setWords);
+                        comboboxSearch.getItems().addAll(list);
                         if (!comboboxSearch.isShowing()) {
                             comboboxSearch.show();
                         }
@@ -661,30 +716,25 @@ public class Main  extends Application {
             }
         });
 
-        comboboxSearch.setOnKeyPressed(new EventHandler<KeyEvent>() {
-            @Override
-            public void handle(KeyEvent event) {
-                if (keyCombinationShiftC.match(event)) {
+        comboboxSearch.setOnKeyPressed(event -> {
+            if (keyCombinationShiftC.match(event)) {
+                Print.pbl("CTRL + C Pressed");
 
-                    Print.pbl("CTRL + C Pressed");
-
-                }
             }
         });
 
         gridpane.add(vboxComboboxSearch, 0, 0);
+
+        scrollPane.setFitToHeight(true);
         scrollPane.setFitToWidth(true);
-        scrollPane.setVmax(600);
-        scrollPane.setPrefSize(600, 600);
+        scrollPane.setPrefSize(WINDOW_WIDTH,  WINDOW_HEIGHT);
         scrollPane.setContent(vboxTextFieldFile);
+
         gridpane.add(scrollPane, 1, 0);
-
-
-
-
-        Scene scene = new Scene(gridpane, comboboxWith + textFieldWidth, textFieldHeight);
+        Scene scene = new Scene(gridpane, comboboxWith + WINDOW_WIDTH, WINDOW_HEIGHT);
         primaryStage.setScene(scene);
         primaryStage.show();
+
 
 
         //test2();
@@ -792,32 +842,6 @@ public class Main  extends Application {
 
         return map;
     }
-
-//    public static void prefixWordMap(String str, List<String> listCode){
-//        List<String> list = Aron.split(str, ",");
-//        Map<String, List<List<String>>> map = new HashMap<>();
-//        for(String s : list){
-//            List<String> listWord = Aron.split(s, "\\s+");
-//            String prefixKey = "";
-//            for(int i=0; i<listWord.size(); i++){
-//                prefixKey = prefixKey + " " + listWord.get(i);
-//                prefixKey = prefixKey.trim();
-//                List<List<String>> value = map.get(prefixKey);
-//                if(value != null){
-//                    value.add(Arrays.asList("Snap worth of 27.8 billion"));
-//                    map.put(prefixKey, value);
-//                }else{
-//                    List<List<String>> tmpLists = new ArrayList<>();
-//                    tmpLists.add(Arrays.asList("make sense, does't make sense, do beyond yourself"));
-//                    map.put(prefixKey, tmpLists);
-//
-//                }
-//                Print.pbl("------------------");
-//            }
-//            Print.pbl("==============");
-//
-//        }
-//    }
 
     /**
      * Test the getCurrentDir method
