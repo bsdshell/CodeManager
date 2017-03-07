@@ -36,104 +36,9 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-
-//class ScrollFreeTextArea extends StackPane {
-//
-//    private Label label;
-//    private TextArea textArea;
-//    private Character enterChar = new Character((char) 10);
-//    private Region content;
-//    private SimpleDoubleProperty contentHeight = new SimpleDoubleProperty();
-//
-//    private final double NEW_LINE_HEIGHT = 18D;
-//    private final double TOP_PADDING = 3D;
-//    private final double BOTTOM_PADDING = 6D;
-//
-//    public ScrollFreeTextArea() {
-//        super();
-//        configure();
-//    }
-//
-//    private void configure() {
-//        setAlignment(Pos.TOP_LEFT);
-//
-//        this.textArea = new TextArea() {
-//            @Override
-//            protected void layoutChildren() {
-//                super.layoutChildren();
-//                if (content == null) {
-//                    content = (Region) lookup(".content");
-//                    contentHeight.bind(content.heightProperty());
-//                    content.heightProperty().addListener(new ChangeListener<Number>() {
-//                        @Override
-//                        public void changed(ObservableValue<? extends Number> paramObservableValue, Number paramT1, Number paramT2) {
-//                            //System.out.println("Content View Height :"+paramT2.doubleValue());
-//                        }
-//                    });
-//                }
-//            };
-//        };
-//        this.textArea.setWrapText(true);
-//
-//        this.label = new Label();
-//        this.label.setWrapText(true);
-//        this.label.prefWidthProperty().bind(this.textArea.widthProperty());
-//        label.textProperty().bind(new StringBinding() {
-//            {
-//                bind(textArea.textProperty());
-//            }
-//            @Override
-//            protected String computeValue() {
-//                if (textArea.getText() != null && textArea.getText().length() > 0) {
-//                    if (!((Character)textArea.getText().charAt(textArea.getText().length() - 1)).equals(enterChar)) {
-//                        return textArea.getText() + enterChar;
-//                    }
-//                }
-//                return textArea.getText();
-//            }
-//        });
-//
-//        StackPane lblContainer = StackPaneBuilder.create()
-//                .alignment(Pos.TOP_LEFT)
-//                .padding(new Insets(4, 7, 7, 7))
-//                .children(label)
-//                .build();
-//        // Binding the container width/height to the TextArea width.
-//        lblContainer.maxWidthProperty().bind(textArea.widthProperty());
-//
-//        textArea.textProperty().addListener(new ChangeListener<String>() {
-//            @Override
-//            public void changed(ObservableValue<? extends String> paramObservableValue,	String paramT1, String value) {
-//                layoutForNewLine(textArea.getText());
-//            }
-//        });
-//
-//        label.heightProperty().addListener(new ChangeListener<Number>() {
-//            @Override
-//            public void changed(ObservableValue<? extends Number> paramObservableValue,	Number paramT1, Number paramT2) {
-//                layoutForNewLine(textArea.getText());
-//            }
-//        });
-//
-//        getChildren().addAll(lblContainer, textArea);
-//    }
-//
-//    private void layoutForNewLine(String text){
-//        if (text != null && text.length() > 0 && ((Character)text.charAt(text.length() - 1)).equals(enterChar)) {
-//            textArea.setPrefHeight(label.getHeight() + NEW_LINE_HEIGHT + TOP_PADDING + BOTTOM_PADDING);
-//            textArea.setMinHeight(textArea.getPrefHeight());
-//        }
-//        else {
-//            textArea.setPrefHeight(label.getHeight() + TOP_PADDING + BOTTOM_PADDING);
-//            textArea.setMinHeight(textArea.getPrefHeight());
-//        }
-//    }
-//
-//    public TextArea getTextArea() {
-//        return textArea;
-//    }
-//}
-
+/**
+ *
+ */
 class MyTextFlow extends TextFlow {
     private String fontFamily = "Helvetica";
     private double fontSize = 14;
@@ -160,6 +65,8 @@ class MyTextFlow extends TextFlow {
         preHeight = 300;
         setStyleStr = "-fx-background-color: white;";
         setLineSpacing(4);
+        setLayoutX(10);
+        setLayoutY(10);
     }
     public MyTextFlow createTextFlow(){
         for(String s : list) {
@@ -172,6 +79,7 @@ class MyTextFlow extends TextFlow {
         }
         setPrefSize(preWidth, preHeight);
         setStyle(setStyleStr);
+
         return this;
     }
 }
@@ -192,6 +100,17 @@ final class ProcessList {
 //        String fName = "/Users/cat/myfile/github/snippets/snippet_test.m";
         this.fName = fName;
         List<List<String>> list2d = readCodeFile(fName);
+        buildAutoCompletionKeyCodeMap(list2d);
+    }
+    public ProcessList(List<String> listFile) {
+//        String fName = "/Users/cat/myfile/github/snippets/snippet_test.m";
+
+        List<List<String>> list2d = new ArrayList<>();
+
+        for(String fName : listFile) {
+            List<List<String>> lists1 = readCodeFile(fName);
+            list2d = Aron.mergeLists(list2d, lists1);
+        }
         buildAutoCompletionKeyCodeMap(list2d);
     }
 
@@ -409,13 +328,14 @@ final class ProcessList {
 
 
 public class Main  extends Application {
-    private AutoCompletionBinding<String> autoCompletionBinding;
-    //private final String allPathsFileName = "/Users/cat/myfile/github/java/text/path.txt";
-    //private final String fName = "/Users/cat/myfile/github/snippets/snippet_test.m";
-    private final String fName = "/Users/cat/myfile/github/snippets/snippet.m";
-    private ObservableList<String> data = FXCollections.observableArrayList();
     public static void main(String[] args) {
         launch(args);
+    }
+    public List<String> configure(){
+        return Arrays.asList(
+                "/Users/cat/myfile/github/snippets/snippet.m",
+                "/Users/cat/myfile/private/secret.m"
+        );
     }
 
     @Override
@@ -424,20 +344,15 @@ public class Main  extends Application {
         final KeyCombination keyCombinationShiftC = new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_DOWN);
         final BooleanProperty spacePressed = new SimpleBooleanProperty(false);
         final BooleanProperty rightPressed = new SimpleBooleanProperty(false);
-        final BooleanBinding spaceAndRightPressed = spacePressed.and(rightPressed);
 
         final Clipboard clipboard = Clipboard.getSystemClipboard();
         final ClipboardContent content = new ClipboardContent();
 
-        final ProcessList processList = new ProcessList(fName);
-        List<List<String>> list2d = readCode(fName);
-        Group root = new Group();
+        final ProcessList processList = new ProcessList(configure());
 
         final ScrollPane scrollPane = new ScrollPane();
         final double WINDOW_WIDTH = 1000;
         final double WINDOW_HEIGHT = 800;
-        final double textFieldWidth = 600;
-        final double textFieldHeight = 600;
         final double comboboxWith = 300;
         GridPane gridpane = new GridPane();
         gridpane.setPadding(new Insets(5));
