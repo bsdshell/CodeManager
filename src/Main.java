@@ -438,8 +438,9 @@ public class Main  extends Application {
         comboboxSearch.getSelectionModel().selectedItemProperty().addListener((obValue, previous, current) -> {
             Print.pbl("timetochange: current item:=" + comboboxSearch.getEditor().getText());
             Print.pbl("obValue=" + obValue + " previous=" + previous + " current=" + current);
-            if(current != null && !Strings.isNullOrEmpty(current)) {
-                List<List<String>> lists = processList.mapList.get(current);
+            if(current != null && !Strings.isNullOrEmpty(current.trim())) {
+                String inputKey = Aron.trimLeading(current);
+                List<List<String>> lists = processList.mapList.get(Aron.trimLeading(inputKey));
                 if(lists != null && lists.size() > 0) {
                     vboxTextFieldFile.getChildren().clear();
                     textAreaList.clear();
@@ -612,8 +613,9 @@ public class Main  extends Application {
                         comboboxSearch.show();
                     }
                 }else {
-                    String prefix = comboboxSearch.getEditor().getText();
+                    String prefix =  Aron.trimLeading( comboboxSearch.getEditor().getText());
                     Print.pbl("DOWN KEY: selected item:=" + comboboxSearch.getEditor().getText());
+                    Print.pbl("prefix  : selected item:=" + comboboxSearch.getEditor().getText());
 
                     if (!Strings.isNullOrEmpty(prefix)) {
                         Print.pbl("prefix=" + prefix);
