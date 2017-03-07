@@ -8,6 +8,7 @@ import javafx.application.Platform;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -20,13 +21,18 @@ import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.effect.DropShadow;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.*;
 import javafx.scene.layout.*;
 import javafx.scene.text.*;
 import javafx.stage.Stage;
 import org.controlsfx.control.textfield.AutoCompletionBinding;
+import org.controlsfx.dialog.Wizard;
+import org.controlsfx.tools.Borders;
 
 import java.awt.Font;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -59,7 +65,6 @@ class MyTextFlow extends TextFlow {
         dropShadow.setOffsetY(4);
         dropShadow.setColor(javafx.scene.paint.Color.GRAY);
 
-        this.setStyle("-fx-background-color: gray;");
 
         textColor = javafx.scene.paint.Color.BLACK;
         preWidth  = 1000;
@@ -166,11 +171,11 @@ final class ProcessList {
                 List<String> splitKeys = Aron.split(list.get(0), ":");
                 if(splitKeys.size() > 0){
 
-                    String abbreviation = splitKeys.get(0).trim();
+                    String abbreviation = splitKeys.get(0).toLowerCase().trim();
                     Print.pbl("key=" + abbreviation);
 
                     if(splitKeys.size() > 2) {
-                        Map<String, Set<List<String>>> oneBlockMap = prefixWordMap(splitKeys.get(2).trim(), list);
+                        Map<String, Set<List<String>>> oneBlockMap = prefixWordMap(splitKeys.get(2).toLowerCase().trim(), list);
                         prefixWordMap = Aron.mergeMapSet(prefixWordMap, oneBlockMap);
                     }
 
@@ -293,7 +298,7 @@ final class ProcessList {
 
                 for(String word : listWord){
                     prefixKey = prefixKey + " " + word;
-                    prefixKey = prefixKey.trim();
+                    prefixKey = prefixKey.trim().toLowerCase();
                     Set<List<String>> value = mapSet.get(prefixKey);
                     if (value != null) {
                         value.add(listCode.subList(1, listCode.size()));
@@ -332,7 +337,7 @@ public class Main  extends Application {
     public static void main(String[] args) {
         launch(args);
     }
-    public List<String> configure(){
+    private List<String> configure(){
         return Arrays.asList(
                 "/Users/cat/myfile/github/snippets/snippet.m",
                 "/Users/cat/myfile/private/secret.m"
@@ -369,20 +374,20 @@ public class Main  extends Application {
         List<TextArea> textAreaList = new ArrayList<>();
 
 
-        final ComboBox<String> comboboxSearch = new ComboBox<>();
-        comboboxSearch.setEditable(true);
-        comboboxSearch.setPrefWidth(300);
+        final ComboBox<String> comboboxAbbreSearch = new ComboBox<>();
+        comboboxAbbreSearch.setEditable(true);
+        comboboxAbbreSearch.setPrefWidth(300);
 
-        final ComboBox<String> comboboxKeyWord = new ComboBox<>();
-        comboboxKeyWord.setEditable(true);
-        comboboxKeyWord.setPrefWidth(300);
+        final ComboBox<String> comboboxKeyWordSearch = new ComboBox<>();
+        comboboxKeyWordSearch.setEditable(true);
+        comboboxKeyWordSearch.setPrefWidth(300);
 
 
         VBox vboxComboboxSearch = new VBox();
         vboxComboboxSearch.setAlignment(Pos.TOP_CENTER);
         vboxComboboxSearch.setSpacing(4);
-        vboxComboboxSearch.getChildren().add(comboboxSearch);
-        vboxComboboxSearch.getChildren().add(comboboxKeyWord);
+        vboxComboboxSearch.getChildren().add(comboboxAbbreSearch);
+        vboxComboboxSearch.getChildren().add(comboboxKeyWordSearch);
 
         VBox vboxTextFieldFile = new VBox();
 
@@ -435,44 +440,28 @@ public class Main  extends Application {
 //            }
 //        });
 
-        comboboxSearch.getSelectionModel().selectedItemProperty().addListener((obValue, previous, current) -> {
-            Print.pbl("timetochange: current item:=" + comboboxSearch.getEditor().getText());
+        comboboxAbbreSearch.getSelectionModel().selectedItemProperty().addListener((obValue, previous, current) -> {
+            Print.pbl("timetochange: current item:=" + comboboxAbbreSearch.getEditor().getText());
             Print.pbl("obValue=" + obValue + " previous=" + previous + " current=" + current);
+
             if(current != null && !Strings.isNullOrEmpty(current.trim())) {
                 String inputKey = Aron.trimLeading(current);
                 List<List<String>> lists = processList.mapList.get(Aron.trimLeading(inputKey));
+
                 if(lists != null && lists.size() > 0) {
                     vboxTextFieldFile.getChildren().clear();
                     textAreaList.clear();
+
                     for (List<String> list : lists) {
-//                      ScrollFreeTextArea textArea = new ScrollFreeTextArea();
-                        TextArea textArea = new TextArea();
-                        textArea.setFont(javafx.scene.text.Font.font(Font.MONOSPACED));
+                        MyTextFlow codeTextFlow = new MyTextFlow(list);
+                        vboxTextFieldFile.getChildren().add(new FlowPane(codeTextFlow.createTextFlow()));
 
-                        MyTextFlow myTextFlow = new MyTextFlow(list);
+                        addFlowPaneToVBox(vboxTextFieldFile, list.get(list.size()-1));
 
-                        // TODO: create one textFlow
-                        for(int i=1; i<list.size(); i++){
-                            String line = list.get(i) + "\n";
-//                                textArea.getTextArea().appendText(line);
-                            textArea.appendText(line);
-                            Print.pbl("s=" + list.get(i));
-                        }
-
-                        // TODO: add textFlow to vbox
-
-
-//                        vboxTextFieldFile.getChildren().add(textArea);
-
-                        vboxTextFieldFile.getChildren().add(new FlowPane(myTextFlow.createTextFlow()));
-                        textAreaList.add(textArea);
-                        int lineCount = textArea.getText().split("\n").length;
-                        Print.pbl("lineCount=" + lineCount);
-                        textArea.setPrefSize( Double.MAX_VALUE, lineHeight*(lineCount + 3) );
+                        TextArea textArea = appendStringToTextAre(list.subList(0, list.size()));
+                        //createListTextAreas(vboxTextFieldFile, textAreaList, textArea, lineHeight);
                     }
-                    //content.putString(textAreaList.get(0).getTextArea().getText());
-                    content.putString(Aron.listToStringNewLine(lists.get(0)));
-                    clipboard.setContent(content);
+                    addContentToClipBoard(content, clipboard, lists);
                 }
             }else{
                 if(current == null){
@@ -484,15 +473,13 @@ public class Main  extends Application {
             }
         });
 
-
-
-        comboboxKeyWord.getSelectionModel().selectedItemProperty().addListener((ObservableValue<? extends String> obValue, String previous, String current) -> {
-            Print.pbl("timetochange: current item:=" + comboboxKeyWord.getEditor().getText());
+        comboboxKeyWordSearch.getSelectionModel().selectedItemProperty().addListener((ObservableValue<? extends String> obValue, String previous, String current) -> {
+            Print.pbl("timetochange: current item:=" + comboboxKeyWordSearch.getEditor().getText());
             Print.pbl("obValue=" + obValue + " previous=" + previous + " current=" + current);
 
-
-            if(current != null && !Strings.isNullOrEmpty(current)) {
-                Set<List<String>> setCode = processList.prefixWordMap.get(current);
+            if(current != null && !Strings.isNullOrEmpty(current.trim())) {
+                String inputKey = Aron.trimLeading(current).toLowerCase();
+                Set<List<String>> setCode = processList.prefixWordMap.get(inputKey);
                 if(setCode != null && setCode.size() > 0) {
                     vboxTextFieldFile.getChildren().clear();
                     //-----------------------------------------------------------------
@@ -535,28 +522,28 @@ public class Main  extends Application {
             }
         });
 
-        comboboxKeyWord.getEditor().addEventFilter(KeyEvent.KEY_PRESSED, event -> {
-            Print.pbl("KEY_PRESSED: KeyEvent       :=" + comboboxKeyWord.getEditor().getText());
+        comboboxKeyWordSearch.getEditor().addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            Print.pbl("KEY_PRESSED: KeyEvent       :=" + comboboxKeyWordSearch.getEditor().getText());
 
             if (event.getCode() == KeyCode.ENTER) {
-                Print.pbl("ENTER KEY: selected item:=" + comboboxKeyWord.getEditor().getText());
-                comboboxKeyWord.hide();
+                Print.pbl("ENTER KEY: selected item:=" + comboboxKeyWordSearch.getEditor().getText());
+                comboboxKeyWordSearch.hide();
             }else if(event.getCode() == KeyCode.DOWN) {
-                if(comboboxKeyWord.getItems().size() > 0){
-                    if(!comboboxKeyWord.isShowing()){
-                        comboboxKeyWord.show();
+                if(comboboxKeyWordSearch.getItems().size() > 0){
+                    if(!comboboxKeyWordSearch.isShowing()){
+                        comboboxKeyWordSearch.show();
                     }
                 }else {
-                    String prefix = comboboxKeyWord.getEditor().getText();
-                    Print.pbl("DOWN KEY: selected item:=" + comboboxKeyWord.getEditor().getText());
+                    String prefix =  Aron.trimLeading(comboboxKeyWordSearch.getEditor().getText());
+                    Print.pbl("DOWN KEY: selected item:=" + comboboxKeyWordSearch.getEditor().getText());
 
                     if (!Strings.isNullOrEmpty(prefix)) {
                         Print.pbl("prefix=" + prefix);
                         Set<String> setWords = processList.wordsCompletion.get(prefix);
                         if (setWords != null && setWords.size() > 0) {
-                            comboboxKeyWord.getItems().addAll(new ArrayList<>(setWords));
-                            if (!comboboxKeyWord.isShowing()) {
-                                comboboxKeyWord.show();
+                            comboboxKeyWordSearch.getItems().addAll(new ArrayList<>(setWords));
+                            if (!comboboxKeyWordSearch.isShowing()) {
+                                comboboxKeyWordSearch.show();
                             }
                         } else {
                             Print.pbl("prefix= is null or empty");
@@ -575,56 +562,56 @@ public class Main  extends Application {
                 Print.pbl("tab key");
                 clipboard.setContent(content);
             }else{
-                Print.pbl("getEditor().getText()=" + comboboxKeyWord.getEditor().getText());
+                Print.pbl("getEditor().getText()=" + comboboxKeyWordSearch.getEditor().getText());
                 Print.pbl("      event.getText()=" + event.getText());
                 Print.pbl(" event.getCharacter()=" + event.getCharacter());
 
-                String input = comboboxKeyWord.getEditor().getText() + event.getText();
+                String input = comboboxKeyWordSearch.getEditor().getText() + event.getText();
                 if (!Strings.isNullOrEmpty(input)) {
                     Print.pbl("input=" + input);
                     Set<String> setWords = processList.wordsCompletion.get(input);
                     if (setWords != null && setWords.size() > 0) {
-                        comboboxKeyWord.getItems().clear();
+                        comboboxKeyWordSearch.getItems().clear();
                         List<String> list = new ArrayList<>(setWords);
-                        comboboxKeyWord.getItems().addAll(list);
-                        if (!comboboxKeyWord.isShowing()) {
-                            comboboxKeyWord.show();
+                        comboboxKeyWordSearch.getItems().addAll(list);
+                        if (!comboboxKeyWordSearch.isShowing()) {
+                            comboboxKeyWordSearch.show();
                         }
                     } else {
                         Print.pbl("input= is null or empty");
-                        comboboxKeyWord.getItems().clear();
-                        comboboxKeyWord.hide();
+                        comboboxKeyWordSearch.getItems().clear();
+                        comboboxKeyWordSearch.hide();
                     }
                 }
             }
         });
 
 
-        comboboxSearch.getEditor().addEventFilter(KeyEvent.KEY_PRESSED, event -> {
-            Print.pbl("KEY_PRESSED: KeyEvent       :=" + comboboxSearch.getEditor().getText());
+        comboboxAbbreSearch.getEditor().addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            Print.pbl("KEY_PRESSED: KeyEvent       :=" + comboboxAbbreSearch.getEditor().getText());
 
             if (event.getCode() == KeyCode.ENTER) {
-                Print.pbl("ENTER KEY: selected item:=" + comboboxSearch.getEditor().getText());
+                Print.pbl("ENTER KEY: selected item:=" + comboboxAbbreSearch.getEditor().getText());
                 //comboboxSearch.getItems().clear();
-                comboboxSearch.hide();
+                comboboxAbbreSearch.hide();
             }else if(event.getCode() == KeyCode.DOWN) {
-                if(comboboxSearch.getItems().size() > 0){
-                    if(!comboboxSearch.isShowing()) {
-                        comboboxSearch.show();
+                if(comboboxAbbreSearch.getItems().size() > 0){
+                    if(!comboboxAbbreSearch.isShowing()) {
+                        comboboxAbbreSearch.show();
                     }
                 }else {
-                    String prefix =  Aron.trimLeading( comboboxSearch.getEditor().getText());
-                    Print.pbl("DOWN KEY: selected item:=" + comboboxSearch.getEditor().getText());
-                    Print.pbl("prefix  : selected item:=" + comboboxSearch.getEditor().getText());
+                    String prefix =  Aron.trimLeading( comboboxAbbreSearch.getEditor().getText());
+                    Print.pbl("DOWN KEY: selected item:=" + comboboxAbbreSearch.getEditor().getText());
+                    Print.pbl("prefix  : selected item:=" + comboboxAbbreSearch.getEditor().getText());
 
                     if (!Strings.isNullOrEmpty(prefix)) {
                         Print.pbl("prefix=" + prefix);
                         Set<String> setWords = processList.prefixFullKeyMap.get(prefix);
                         if (setWords != null && setWords.size() > 0) {
                             List<String> list = new ArrayList<>(setWords);
-                            comboboxSearch.getItems().addAll(list);
-                            if (!comboboxSearch.isShowing()) {
-                                comboboxSearch.show();
+                            comboboxAbbreSearch.getItems().addAll(list);
+                            if (!comboboxAbbreSearch.isShowing()) {
+                                comboboxAbbreSearch.show();
                             }
                         } else {
                             Print.pbl("prefix= is null or empty");
@@ -645,29 +632,31 @@ public class Main  extends Application {
 
                 //  input = dog = do + g
 
-                String input = comboboxSearch.getEditor().getText() + event.getText();
+                String input = comboboxAbbreSearch.getEditor().getText() + event.getText();
                 if (!Strings.isNullOrEmpty(input)) {
                     Print.pbl("input=" + input);
                     Set<String> setWords = processList.prefixFullKeyMap.get(input);
                     if (setWords != null && setWords.size() > 0) {
-                        comboboxSearch.getItems().clear();
+                        comboboxAbbreSearch.getItems().clear();
                         List<String> list = new ArrayList<>(setWords);
-                        comboboxSearch.getItems().addAll(list);
-                        if (!comboboxSearch.isShowing()) {
-                            comboboxSearch.show();
+                        comboboxAbbreSearch.getItems().addAll(list);
+                        if (!comboboxAbbreSearch.isShowing()) {
+                            comboboxAbbreSearch.show();
                         }
                     } else {
                         Print.pbl("input= is null or empty");
-                        comboboxSearch.getItems().clear();
-                        comboboxSearch.hide();
+                        comboboxAbbreSearch.getItems().clear();
+                        comboboxAbbreSearch.hide();
                     }
                 }
             }
         });
 
-        comboboxSearch.setOnKeyPressed(event -> {
+        comboboxAbbreSearch.setOnKeyPressed(event -> {
             if (keyCombinationShiftC.match(event)) {
                 Print.pbl("CTRL + C Pressed");
+
+                // TODO: CTRL + C is not working on Key Words search combobox
                 Platform.exit();
             }
         });
@@ -744,6 +733,39 @@ public class Main  extends Application {
         return list2d;
     }
 
+    private TextArea appendStringToTextAre(List<String> list){
+        TextArea textArea = new TextArea();
+        textArea.setFont(javafx.scene.text.Font.font(Font.MONOSPACED));
+        for(String line : list){
+            textArea.appendText(line + "\n");
+            Print.pbl("s=" + line + "\n");
+        }
+        return textArea;
+    }
+
+//    final Clipboard clipboard = Clipboard.getSystemClipboard();
+//    final ClipboardContent content = new ClipboardContent();
+
+    /**
+     * add the FIRST "code block" to clipboard including the header: e.g. jlist_file : * : java list
+     *
+     * @param content is the content of clipboard
+     * @param clipboard contains the data that is copied
+     * @param lists contains list of "code block"
+     */
+    private static  void addContentToClipBoard(ClipboardContent content, Clipboard clipboard, List<List<String>> lists){
+        content.putString(Aron.listToStringNewLine(lists.get(0)));
+        clipboard.setContent(content);
+    }
+
+    public static void createListTextAreas(VBox vbox, List<TextArea> textAreaList,  TextArea textArea, double lineHeight){
+        int lineCount = textArea.getText().split("\n").length;
+        Print.pbl("lineCount=" + lineCount);
+        textArea.setPrefSize( Double.MAX_VALUE, lineHeight*(lineCount + 3) );
+        textAreaList.add(textArea);
+        vbox.getChildren().add(textArea);
+    }
+
     /**
      * The method open the given directory and add all files and directoreis
      * to a list.
@@ -790,6 +812,133 @@ public class Main  extends Application {
 
         return map;
     }
+
+
+    static void test0_splitImageList(){
+        Aron.beg();
+        String header =" img";
+        List<String> imgList = splitImageStrLine(header);
+        Aron.printList(imgList);
+
+        Aron.end();
+    }
+    static void test1_splitImageList(){
+        Aron.beg();
+        String header =" img, file://dog.png, /dog/cat.png, http://dog.png";
+        List<String> imgList = splitImageStrLine(header);
+        Aron.printList(imgList);
+
+        Aron.end();
+    }
+    static void test2_splitImageList(){
+        Aron.beg();
+        String header =" img, ";
+        List<String> imgList = splitImageStrLine(header);
+        Aron.printList(imgList);
+
+        Aron.end();
+    }
+
+    /**
+     * parse lastLine string, create a list of ImageViews from the string if image files are found and add to VBox
+     *
+     * @param vbox contains list of ImageView objects
+     * @param lastLine contains the file path to image file
+     */
+    private static void addFlowPaneToVBox(VBox vbox, String lastLine){
+        List<String> list = splitImageStrLine(lastLine);
+        List<ImageView> imageViewList = imageFileToImageView(list);
+        for(ImageView iv : imageViewList) {
+            BorderPane borderPane = new BorderPane();
+            borderPane.setCenter(iv);
+            vbox.getChildren().add(borderPane);
+        }
+    }
+
+    /**
+     *  split images path/uri with (",")delimiter
+     *
+     * img, file://dog.png, /dog/cat.png, http://dog.png
+     *
+     * @param lastLine string in the last line of "block code"
+     * @return a list contains all the image paths/URIs or an empty list
+     */
+    private static List<String> splitImageStrLine(String lastLine) {
+        List<String> imgList = new ArrayList<>();
+        List<String> list = Aron.splitTrim(lastLine, ",");
+        if(list.size() > 0){
+            if(list.get(0).equals("img")){
+                imgList = list.subList(1, list.size());
+            }
+        }
+        return imgList;
+    }
+
+
+    public void test0_imageFileToImageView(Stage stage){
+        Aron.beg();
+
+        final ScrollPane sp = new ScrollPane();
+        final Image[] images = new Image[5];
+        final ImageView[] pics = new ImageView[5];
+        final VBox vb = new VBox();
+        final Label fileName = new Label();
+        final String [] imageNames = new String [] {
+                "/Users/cat/try/draw10.png",
+                "/Users/cat/try/draw11.png",
+                "/Users/cat/try/draw12.png",
+                "/Users/cat/try/draw13.png",
+                "/Users/cat/try/draw14.png",
+                "/Users/cat/try/draw15.png"
+        };
+
+        VBox box = new VBox();
+        Scene scene = new Scene(box, 400, 400);
+        stage.setScene(scene);
+        stage.setTitle("Scroll Pane");
+        box.getChildren().addAll(sp, fileName);
+        VBox.setVgrow(sp, Priority.ALWAYS);
+
+        fileName.setLayoutX(30);
+        fileName.setLayoutY(160);
+
+        List<ImageView> imageViewList = imageFileToImageView(Arrays.asList(imageNames));
+        for(ImageView iv : imageViewList) {
+            vb.getChildren().add(iv);
+        }
+
+        sp.setVmax(440);
+        sp.setPrefSize(400, 400);
+        sp.setContent(vb);
+        sp.vvalueProperty().addListener((ov, old_val, new_val) -> fileName.setText(imageNames[(new_val.intValue() - 1)/100]));
+        stage.show();
+
+        Aron.end();
+    }
+
+    /**
+     * read image files from input and create a list of ImageViews
+     *
+     * @param listImgNames is a list of image names
+     * @return a list of ImageViews or an empty list
+     */
+    private static List<ImageView> imageFileToImageView(List<String> listImgNames){
+        List<ImageView> imageList = new ArrayList<>();
+        for (String imgPath : listImgNames) {
+            //TODO: Add getResource to get the resources/images
+            //images[i] = new Image(getClass().getResourceAsStream(imageNames[i]));
+            //Print.pbl(images[i].toString());
+            ImageView imageView = new ImageView(new File(imgPath).toURI().toString());
+            imageList.add(imageView);
+            imageView.setFitHeight(400);
+            imageView.setFitWidth(400);
+            imageView.setPreserveRatio(true);
+            imageList.add(imageView);
+        }
+        return imageList;
+    }
+
+
 
     /**
      * Test the getCurrentDir method
