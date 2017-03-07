@@ -4,6 +4,7 @@ import classfile.Print;
 import classfile.Ut;
 import com.google.common.base.Strings;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -665,7 +666,7 @@ public class Main  extends Application {
         comboboxSearch.setOnKeyPressed(event -> {
             if (keyCombinationShiftC.match(event)) {
                 Print.pbl("CTRL + C Pressed");
-
+                Platform.exit();
             }
         });
 
