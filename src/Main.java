@@ -44,14 +44,14 @@ import java.util.regex.Pattern;
  *
  */
 class MyTextFlow extends TextFlow {
-    private String fontFamily = "Helvetica";
-    private double fontSize = 14;
+    private final String fontFamily = "Helvetica";
+    private final double fontSize = 14;
     private DropShadow dropShadow;
     private javafx.scene.paint.Color textColor;
     private double preWidth;
     private double preHeight;
     private String setStyleStr;
-    private List<String> list;
+    private final List<String> list;
     public MyTextFlow(List<String> list){
         this.list = list;
         init();
@@ -94,15 +94,15 @@ class MyTextFlow extends TextFlow {
 final class ProcessList {
     private String fName;
     private Map<String, Set<String>> prefixSuffixMap = new HashMap<>();
-    Map<String, List<List<String>>> mapList = new HashMap<>();
-    Map<String, Set<String>> prefixFullKeyMap = new HashMap<>();
+    final Map<String, List<List<String>>> mapList = new HashMap<>();
+    final Map<String, Set<String>> prefixFullKeyMap = new HashMap<>();
     Map<String, Set<List<String>>> prefixWordMap = new HashMap<>();
-    Map<String, Set<String>> wordsCompletion = new HashMap<>();
+    final Map<String, Set<String>> wordsCompletion = new HashMap<>();
 
     public ProcessList(String fName) {
 //        String fName = "/Users/cat/myfile/github/snippets/snippet_test.m";
         this.fName = fName;
-        List<List<String>> list2d = readCodeFile(fName);
+        List<List<String>> list2d = readCodeFile(this.fName);
         buildAutoCompletionKeyCodeMap(list2d);
     }
     public ProcessList(List<String> listFile) {
@@ -115,12 +115,6 @@ final class ProcessList {
             list2d = Aron.mergeLists(list2d, lists1);
         }
         buildAutoCompletionKeyCodeMap(list2d);
-    }
-
-    // return map that contains key and value [K, v], key is prefix of string before ":"
-    // value is List<String> contains all code after the first line
-    public Map<String, List<String>> getPrefixMap(){
-        return null;
     }
 
     /**
@@ -316,16 +310,6 @@ final class ProcessList {
             Print.pbl("ERROR: invalid file format. listCode.size()=" + listCode.size());
         }
         return mapSet;
-    }
-
-    public List<String> mergeList(List<String> list1, List<String> list2){
-        Set<String> set = new HashSet<>();
-        for(String s : list1)
-            set.add(s);
-        for(String s : list2)
-            set.add(s);
-
-        return new ArrayList<>(set);
     }
 }
 
