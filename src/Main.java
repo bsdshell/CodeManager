@@ -5,16 +5,12 @@ import classfile.Ut;
 import com.google.common.base.Strings;
 import javafx.application.Application;
 import javafx.application.Platform;
-import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
+import javafx.embed.swing.SwingFXUtils;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.Alert.AlertType;
@@ -23,15 +19,16 @@ import javafx.scene.control.TextArea;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.image.WritableImage;
 import javafx.scene.input.*;
 import javafx.scene.layout.*;
 import javafx.scene.text.*;
 import javafx.stage.Stage;
-import org.controlsfx.control.textfield.AutoCompletionBinding;
-import org.controlsfx.dialog.Wizard;
-import org.controlsfx.tools.Borders;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.rendering.PDFRenderer;
 
 import java.awt.Font;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
@@ -456,7 +453,7 @@ public class Main  extends Application {
                         MyTextFlow codeTextFlow = new MyTextFlow(list);
                         vboxTextFieldFile.getChildren().add(new FlowPane(codeTextFlow.createTextFlow()));
 
-                        addFlowPaneToVBox(vboxTextFieldFile, list.get(list.size()-1));
+                        addFlowPaneToVBox(vboxTextFieldFile, list);
 
                         TextArea textArea = appendStringToTextAre(list.subList(0, list.size()));
                         //createListTextAreas(vboxTextFieldFile, textAreaList, textArea, lineHeight);
@@ -840,6 +837,9 @@ public class Main  extends Application {
     }
 
     /**
+     * all the image files in one line,
+     * e.g img, /dog.png, /cat.png
+     *
      * parse lastLine string, create a list of ImageViews from the string if image files are found and add to VBox
      *
      * @param vbox contains list of ImageView objects
@@ -854,6 +854,29 @@ public class Main  extends Application {
             vbox.getChildren().add(borderPane);
         }
     }
+
+    /**
+     * create FlowPane with ImageView object and add the FlowPane to VBox.
+     *
+     * each line contains ONLY one image file
+     * e.g. img, /dog.png
+     *
+     * add ImageViews from different lines
+     *
+     * @param vbox contains list of ImageView objects
+     * @param list contains the "code block"
+     */
+    private static void addFlowPaneToVBox(VBox vbox, List<String> list){
+        // extract image file names in reverse order
+        List<String> imgList = extractImageFiles(list);
+        List<ImageView> imageViewList = imageFileToImageView(imgList);
+        for(ImageView iv : imageViewList) {
+            BorderPane borderPane = new BorderPane();
+            borderPane.setCenter(iv);
+            vbox.getChildren().add(borderPane);
+        }
+    }
+
 
     /**
      *  split images path/uri with (",")delimiter
@@ -871,6 +894,21 @@ public class Main  extends Application {
                 imgList = list.subList(1, list.size());
             }
         }
+        return imgList;
+    }
+
+    private static List<String> extractImageFiles(List<String> list) {
+        List<String> imgList = new ArrayList<>();
+
+        for(int i=list.size()-1; i>= 0; i--){
+            List<String> ll = Aron.splitTrim(list.get(i), ",");
+            if(ll.size() > 1 && ll.get(0).equals("img")){
+                imgList.add(ll.get(1));
+            }else{
+                break;
+            }
+        }
+        Collections.reverse(imgList);
         return imgList;
     }
 
@@ -928,16 +966,75 @@ public class Main  extends Application {
             //TODO: Add getResource to get the resources/images
             //images[i] = new Image(getClass().getResourceAsStream(imageNames[i]));
             //Print.pbl(images[i].toString());
-            ImageView imageView = new ImageView(new File(imgPath).toURI().toString());
-            imageList.add(imageView);
-            imageView.setFitHeight(400);
-            imageView.setFitWidth(400);
-            imageView.setPreserveRatio(true);
-            imageList.add(imageView);
+            ImageView imageView = null;
+            if(fileType(imgPath).equals("IMG")){
+                imageView = new ImageView(new File(imgPath).toURI().toString());
+            }else if(fileType(imgPath).equals("PDF")){
+                try {
+                    imageView = pdfToImage(imgPath);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            if(imageView != null) {
+                imageList.add(imageView);
+                imageView.setFitHeight(600);
+                imageView.setFitWidth(600);
+                imageView.setPreserveRatio(true);
+                imageList.add(imageView);
+            }
         }
         return imageList;
     }
 
+    /**
+     * detect file types from file extensions: image(.png, .jpeg, .jpg) and PDF(.pdf)
+     *
+     * @param fName is name of file.
+     * @return image file: "IMG" or pdf file: "PDF", empty otherwise
+     *
+     */
+    private static String fileType(String fName){
+        String type = "";
+        Pattern pdfPattern = Pattern.compile("\\.pdf$", Pattern.CASE_INSENSITIVE);
+        Matcher pdfMatcher = pdfPattern.matcher(fName);
+
+        Pattern pattern = Pattern.compile("\\.png|\\.jpeg|\\.jpg$", Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pattern.matcher(fName);
+
+        if(matcher.find()){
+            Print.pbl("fName=" + fName);
+            type = "IMG";
+        }else if(pdfMatcher.find()){
+            Print.pbl("fName=" + fName);
+            type = "PDF";
+        }
+        return type;
+    }
+
+    /**
+     * Convert PDF file to ImageView
+     *
+     * @param fName is name of PDF file
+     * @return ImageView for the PDF file
+     * @throws Exception
+     */
+    private static ImageView pdfToImage(String fName) throws Exception{
+        int pdfScale = 1;
+        File file = new File(fName);
+        PDDocument doc = PDDocument.load(file);
+        if(doc == null){
+            Print.pbl("doc is null");
+        }
+
+        PDFRenderer renderer = new PDFRenderer(doc);
+        //PDFBoxでレンダリングして、BufferedImageを作成
+        BufferedImage img = renderer.renderImage(0, pdfScale);
+
+        //JavaFXで扱えるように、WritableImageに変換
+        WritableImage fxImage = SwingFXUtils.toFXImage(img, null);
+        return new ImageView(fxImage);
+    }
 
 
     /**
