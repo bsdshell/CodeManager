@@ -9,11 +9,13 @@ import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.value.ObservableValue;
 import javafx.embed.swing.SwingFXUtils;
+import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.Alert.AlertType;
+import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.effect.DropShadow;
@@ -23,11 +25,13 @@ import javafx.scene.image.WritableImage;
 import javafx.scene.input.*;
 import javafx.scene.layout.*;
 import javafx.scene.text.*;
+import javafx.scene.text.Font;
 import javafx.stage.Stage;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.PDFRenderer;
 
-import java.awt.Font;
+import java.awt.*;
+//import java.awt.Font;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -328,10 +332,6 @@ public class Main  extends Application {
     @Override
     public void start(final Stage primaryStage) {
         final double lineHeight = 16.0;
-        final KeyCombination keyCombinationShiftC = new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_DOWN);
-        final BooleanProperty spacePressed = new SimpleBooleanProperty(false);
-        final BooleanProperty rightPressed = new SimpleBooleanProperty(false);
-
         final Clipboard clipboard = Clipboard.getSystemClipboard();
         final ClipboardContent content = new ClipboardContent();
 
@@ -377,49 +377,6 @@ public class Main  extends Application {
 
         vboxTextFieldFile.setAlignment(Pos.TOP_CENTER);
         vboxTextFieldFile.setPadding(new Insets(1, 1, 10, 1));
-
-//        comboboxSearch.getSelectionModel().selectedItemProperty().addListener((obValue, previous, current) -> {
-//            Print.pbl("timetochange: current item:=" + comboboxSearch.getEditor().getText());
-//            Print.pbl("obValue=" + obValue + " previous=" + previous + " current=" + current);
-//            if(current != null && !Strings.isNullOrEmpty(current)) {
-//                List<List<String>> lists = processList.mapList.get(current);
-//                if(lists != null && lists.size() > 0) {
-//                    vboxTextFieldFile.getChildren().clear();
-//                    textAreaList.clear();
-//                    for (List<String> list : lists) {
-////                            ScrollFreeTextArea textArea = new ScrollFreeTextArea();
-//                        TextArea textArea = new TextArea();
-//                        textArea.setFont(javafx.scene.text.Font.font(Font.MONOSPACED));
-//
-//                        // TODO: create one textFlow
-//                        for(int i=1; i<list.size(); i++){
-//                            String line = list.get(i) + "\n";
-////                                textArea.getTextArea().appendText(line);
-//                            textArea.appendText(line);
-//                            Print.pbl("s=" + list.get(i));
-//                        }
-//                        // TODO: add textFlow to vbox
-//
-//
-//                        vboxTextFieldFile.getChildren().add(textArea);
-//                        textAreaList.add(textArea);
-//                        int lineCount = textArea.getText().split("\n").length;
-//                        Print.pbl("lineCount=" + lineCount);
-//                        textArea.setPrefSize( Double.MAX_VALUE, lineHeight*(lineCount + 3) );
-//                    }
-//                    //content.putString(textAreaList.get(0).getTextArea().getText());
-//                    content.putString(textAreaList.get(0).getText());
-//                    clipboard.setContent(content);
-//                }
-//            }else{
-//                if(current == null){
-//                    Print.pbl("current is null");
-//                }else {
-//                    Print.pbl("current is not null");
-//                }
-//                Print.pbl("ERROR: current=" + current);
-//            }
-//        });
 
         comboboxAbbreSearch.getSelectionModel().selectedItemProperty().addListener((obValue, previous, current) -> {
             Print.pbl("timetochange: current item:=" + comboboxAbbreSearch.getEditor().getText());
@@ -473,7 +430,7 @@ public class Main  extends Application {
                         // TODO: call method to pass list of string
 //                            ScrollFreeTextArea textArea = new ScrollFreeTextArea();
                         TextArea textArea = new TextArea();
-                        textArea.setFont(javafx.scene.text.Font.font(Font.MONOSPACED));
+                        textArea.setFont(javafx.scene.text.Font.font ("Verdana", 20));
 
                         for(String word : list){
                             String line = word + "\n";
@@ -570,10 +527,8 @@ public class Main  extends Application {
 
         comboboxAbbreSearch.getEditor().addEventFilter(KeyEvent.KEY_PRESSED, event -> {
             Print.pbl("KEY_PRESSED: KeyEvent       :=" + comboboxAbbreSearch.getEditor().getText());
-
             if (event.getCode() == KeyCode.ENTER) {
                 Print.pbl("ENTER KEY: selected item:=" + comboboxAbbreSearch.getEditor().getText());
-                //comboboxSearch.getItems().clear();
                 comboboxAbbreSearch.hide();
             }else if(event.getCode() == KeyCode.DOWN) {
                 if(comboboxAbbreSearch.getItems().size() > 0){
@@ -610,9 +565,6 @@ public class Main  extends Application {
                 clipboard.setContent(content);
             }else{
                 Print.pbl("line 342");
-
-                //  input = dog = do + g
-
                 String input = comboboxAbbreSearch.getEditor().getText() + event.getText();
                 if (!Strings.isNullOrEmpty(input)) {
                     Print.pbl("input=" + input);
@@ -633,14 +585,6 @@ public class Main  extends Application {
             }
         });
 
-        comboboxAbbreSearch.setOnKeyPressed(event -> {
-            if (keyCombinationShiftC.match(event)) {
-                Print.pbl("CTRL + C Pressed");
-
-                // TODO: CTRL + C is not working on Key Words search combobox
-                Platform.exit();
-            }
-        });
 
         gridpane.add(vboxComboboxSearch, 0, 0);
 
@@ -654,13 +598,23 @@ public class Main  extends Application {
         primaryStage.setScene(scene);
         primaryStage.show();
 
-
+        terminateProgram(comboboxAbbreSearch);
+        terminateProgram(comboboxKeyWordSearch);
 
         //test2();
 //      test5();
 //        test6();
         //test7();
         test8();
+    }
+    public static void terminateProgram(Control control){
+        final KeyCombination keyCombinationShiftC = new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_DOWN);
+        control.setOnKeyPressed(event -> {
+            if (keyCombinationShiftC.match(event)) {
+                Print.pbl("CTRL + C Pressed" + " hashCode=" + control.hashCode());
+                Platform.exit();
+            }
+        });
     }
     public static  List<String> fileSearch(List<String> list, String pattern){
         Map<String, String> map = new HashMap<>();
@@ -716,7 +670,7 @@ public class Main  extends Application {
 
     private TextArea appendStringToTextAre(List<String> list){
         TextArea textArea = new TextArea();
-        textArea.setFont(javafx.scene.text.Font.font(Font.MONOSPACED));
+        textArea.setFont(Font.font ("Verdana", 20));
         for(String line : list){
             textArea.appendText(line + "\n");
             Print.pbl("s=" + line + "\n");
