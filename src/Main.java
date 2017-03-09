@@ -1,5 +1,6 @@
 
 import classfile.Aron;
+import classfile.FileWatcher;
 import classfile.Print;
 import classfile.Ut;
 import com.google.common.base.Strings;
@@ -48,7 +49,8 @@ import java.util.regex.Pattern;
  *
  */
 class MyTextFlow extends TextFlow {
-    private final String fontFamily = "Helvetica";
+    //private final String fontFamily = "Helvetica";
+    private final String fontFamily = "Courier New";
     private final double fontSize = 14;
     private DropShadow dropShadow;
     private javafx.scene.paint.Color textColor;
@@ -123,9 +125,12 @@ final class ProcessList {
 
     /**
      * read the contents of file and store it in a two dimension array
+     * one or more empty lines separates each "block of code" in fileName
      *
      * @param fileName is name of file
      * @return a two dimension array contains the contents of fName
+     *
+     * Note: each List<String> contains one "block of code"
      */
     private List<List<String>> readCodeFile(String fileName){
         List<String> list = Aron.readFileWithWhiteSpace(fileName);
@@ -334,8 +339,9 @@ public class Main  extends Application {
         final double lineHeight = 16.0;
         final Clipboard clipboard = Clipboard.getSystemClipboard();
         final ClipboardContent content = new ClipboardContent();
+        final ProcessList[] processList = {new ProcessList(configure())};
 
-        final ProcessList processList = new ProcessList(configure());
+        watchModifiedFile(processList);
 
         final ScrollPane scrollPane = new ScrollPane();
         final double WINDOW_WIDTH = 1000;
@@ -384,14 +390,14 @@ public class Main  extends Application {
 
             if(current != null && !Strings.isNullOrEmpty(current.trim())) {
                 String inputKey = Aron.trimLeading(current);
-                List<List<String>> lists = processList.mapList.get(Aron.trimLeading(inputKey));
+                List<List<String>> lists = processList[0].mapList.get(Aron.trimLeading(inputKey));
 
                 if(lists != null && lists.size() > 0) {
                     vboxTextFieldFile.getChildren().clear();
                     textAreaList.clear();
 
                     for (List<String> list : lists) {
-                        MyTextFlow codeTextFlow = new MyTextFlow(list);
+                        MyTextFlow codeTextFlow = new MyTextFlow(list.subList(1, list.size()));
                         vboxTextFieldFile.getChildren().add(new FlowPane(codeTextFlow.createTextFlow()));
 
                         addFlowPaneToVBox(vboxTextFieldFile, list);
@@ -417,7 +423,7 @@ public class Main  extends Application {
 
             if(current != null && !Strings.isNullOrEmpty(current.trim())) {
                 String inputKey = Aron.trimLeading(current).toLowerCase();
-                Set<List<String>> setCode = processList.prefixWordMap.get(inputKey);
+                Set<List<String>> setCode = processList[0].prefixWordMap.get(inputKey);
                 if(setCode != null && setCode.size() > 0) {
                     vboxTextFieldFile.getChildren().clear();
                     //-----------------------------------------------------------------
@@ -477,7 +483,7 @@ public class Main  extends Application {
 
                     if (!Strings.isNullOrEmpty(prefix)) {
                         Print.pbl("prefix=" + prefix);
-                        Set<String> setWords = processList.wordsCompletion.get(prefix);
+                        Set<String> setWords = processList[0].wordsCompletion.get(prefix);
                         if (setWords != null && setWords.size() > 0) {
                             comboboxKeyWordSearch.getItems().addAll(new ArrayList<>(setWords));
                             if (!comboboxKeyWordSearch.isShowing()) {
@@ -507,7 +513,7 @@ public class Main  extends Application {
                 String input = comboboxKeyWordSearch.getEditor().getText() + event.getText();
                 if (!Strings.isNullOrEmpty(input)) {
                     Print.pbl("input=" + input);
-                    Set<String> setWords = processList.wordsCompletion.get(input);
+                    Set<String> setWords = processList[0].wordsCompletion.get(input);
                     if (setWords != null && setWords.size() > 0) {
                         comboboxKeyWordSearch.getItems().clear();
                         List<String> list = new ArrayList<>(setWords);
@@ -542,7 +548,7 @@ public class Main  extends Application {
 
                     if (!Strings.isNullOrEmpty(prefix)) {
                         Print.pbl("prefix=" + prefix);
-                        Set<String> setWords = processList.prefixFullKeyMap.get(prefix);
+                        Set<String> setWords = processList[0].prefixFullKeyMap.get(prefix);
                         if (setWords != null && setWords.size() > 0) {
                             List<String> list = new ArrayList<>(setWords);
                             comboboxAbbreSearch.getItems().addAll(list);
@@ -568,7 +574,7 @@ public class Main  extends Application {
                 String input = comboboxAbbreSearch.getEditor().getText() + event.getText();
                 if (!Strings.isNullOrEmpty(input)) {
                     Print.pbl("input=" + input);
-                    Set<String> setWords = processList.prefixFullKeyMap.get(input);
+                    Set<String> setWords = processList[0].prefixFullKeyMap.get(input);
                     if (setWords != null && setWords.size() > 0) {
                         comboboxAbbreSearch.getItems().clear();
                         List<String> list = new ArrayList<>(setWords);
@@ -585,6 +591,8 @@ public class Main  extends Application {
             }
         });
 
+        terminateProgram(comboboxAbbreSearch);
+        terminateProgram(comboboxKeyWordSearch);
 
         gridpane.add(vboxComboboxSearch, 0, 0);
 
@@ -598,8 +606,6 @@ public class Main  extends Application {
         primaryStage.setScene(scene);
         primaryStage.show();
 
-        terminateProgram(comboboxAbbreSearch);
-        terminateProgram(comboboxKeyWordSearch);
 
         //test2();
 //      test5();
@@ -639,6 +645,17 @@ public class Main  extends Application {
             }
         }
         return null;
+    }
+
+    private void watchModifiedFile(ProcessList[] processList){
+        TimerTask task = new FileWatcher( new File("/Users/cat/myfile/github/snippets/snippet.m") ) {
+            protected void onChange( File file ) {
+                System.out.println( "File="+ file.getAbsolutePath() +" have change !" );
+                processList[0] = new ProcessList(configure());
+            }
+        };
+        Timer timer = new Timer();
+        timer.schedule( task , new Date(), 2000 );
     }
 
     /**
@@ -1039,6 +1056,10 @@ public class Main  extends Application {
     private static  void test8(){
         String str = "";
         boolean b = Strings.isNullOrEmpty(str);
+        List<String> list = new ArrayList<>();
+        List<String> fontsList = javafx.scene.text.Font.getFamilies();
+        Aron.printList(fontsList);
+
         Print.pbl(b);
     }
 }
