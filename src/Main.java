@@ -6,11 +6,8 @@ import classfile.Ut;
 import com.google.common.base.Strings;
 import javafx.application.Application;
 import javafx.application.Platform;
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.value.ObservableValue;
 import javafx.embed.swing.SwingFXUtils;
-import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -28,11 +25,9 @@ import javafx.scene.layout.*;
 import javafx.scene.text.*;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
-import javafx.stage.WindowEvent;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.PDFRenderer;
 
-import java.awt.*;
 //import java.awt.Font;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -46,12 +41,34 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+class MyTextArea extends TextArea{
+    private List<String> list;
+    private double fontSize = 14.0;
+    public MyTextArea(List<String> list){
+        this.list = list;
+        setFont(javafx.scene.text.Font.font(java.awt.Font.MONOSPACED, FontPosture.REGULAR, fontSize));
+
+    }
+
+    public MyTextArea createMyTextArea(){
+        double lineHeight = 16.0;
+        for(String line : list){
+            this.appendText(line + "\n");
+            Print.pbl("s=" + line + "\n");
+        }
+        this.setPrefSize( Double.MAX_VALUE, lineHeight*(list.size() + 5) );
+
+        return this;
+    }
+}
+
+
 /**
  *
  */
 class MyTextFlow extends TextFlow {
     //private final String fontFamily = "Helvetica";
-    private final String fontFamily = "Courier New";
+    private final String fontFamily = java.awt.Font.MONOSPACED;
     private final double fontSize = 14;
     private DropShadow dropShadow;
     private javafx.scene.paint.Color textColor;
@@ -60,6 +77,14 @@ class MyTextFlow extends TextFlow {
     private String setStyleStr;
     private final List<String> list;
     public MyTextFlow(List<String> list){
+        preWidth  = 1000;
+        preHeight = 300;
+        this.list = list;
+        init();
+    }
+    public MyTextFlow(List<String> list, double preWidth, double preHeight){
+        this.preWidth = preWidth;
+        this.preHeight = preHeight;
         this.list = list;
         init();
     }
@@ -69,10 +94,7 @@ class MyTextFlow extends TextFlow {
         dropShadow.setOffsetY(4);
         dropShadow.setColor(javafx.scene.paint.Color.GRAY);
 
-
         textColor = javafx.scene.paint.Color.BLACK;
-        preWidth  = 1000;
-        preHeight = 300;
         setStyleStr = "-fx-background-color: white;";
         setLineSpacing(4);
         setLayoutX(10);
@@ -81,7 +103,10 @@ class MyTextFlow extends TextFlow {
     public MyTextFlow createTextFlow(){
         for(String s : list) {
             Text text = new Text(s + "\n");
-            text.setFont(javafx.scene.text.Font.font(fontFamily, FontPosture.REGULAR, fontSize));
+            //text.setFont(javafx.scene.text.Font.font(fontFamily, FontPosture.REGULAR, fontSize));
+            text.setFont(javafx.scene.text.Font.font(java.awt.Font.MONOSPACED, FontPosture.REGULAR, fontSize));
+            //area.setFont(javafx.scene.text.Font.font (java.awt.Font.MONOSPACED, 14));
+
             text.setFill(textColor);
             text.setEffect(dropShadow);
             text.setLineSpacing(100);
@@ -345,9 +370,13 @@ public class Main  extends Application {
         watchModifiedFile(processList);
 
         final ScrollPane scrollPane = new ScrollPane();
-        final double WINDOW_WIDTH = 1000;
-        final double WINDOW_HEIGHT = 800;
-        final double comboboxWith = 300;
+        final double SCOLLPANE_WIDTH = 1200;
+        final double SCOLLPANE_HEIGHT = 1000;
+        final double LEFT_COMBOBOX_WIDTH = 300;
+        final double imgWidth = 800;
+        final double imgHeight = 800;
+        final double textFlowPreWidth = SCOLLPANE_WIDTH;
+        final double textFlowPreHeight = 400;
         GridPane gridpane = new GridPane();
         gridpane.setPadding(new Insets(5));
         gridpane.setMaxSize(Region.USE_COMPUTED_SIZE, Region.USE_COMPUTED_SIZE);
@@ -398,10 +427,10 @@ public class Main  extends Application {
                     textAreaList.clear();
 
                     for (List<String> list : lists) {
-                        MyTextFlow codeTextFlow = new MyTextFlow(list.subList(1, list.size()));
+                        MyTextFlow codeTextFlow = new MyTextFlow(list.subList(1, list.size()), textFlowPreWidth, textFlowPreHeight);
                         vboxTextFieldFile.getChildren().add(new FlowPane(codeTextFlow.createTextFlow()));
 
-                        addFlowPaneToVBox(vboxTextFieldFile, list);
+                        addImageToVbox(vboxTextFieldFile, list, imgWidth, imgHeight);
 
                         TextArea textArea = appendStringToTextAre(list.subList(0, list.size()));
                         //createListTextAreas(vboxTextFieldFile, textAreaList, textArea, lineHeight);
@@ -434,23 +463,18 @@ public class Main  extends Application {
                     textAreaList.clear();
                     for (List<String> list : setCode) {
 
-                        // TODO: call method to pass list of string
-//                            ScrollFreeTextArea textArea = new ScrollFreeTextArea();
-                        TextArea textArea = new TextArea();
-                        textArea.setFont(javafx.scene.text.Font.font ("Verdana", 20));
-
-                        for(String word : list){
-                            String line = word + "\n";
-                            textArea.appendText(line);
-                            Print.pbl("s=" + word);
-                        }
-
-                        // TODO: return textflow or flowpane here
-                        vboxTextFieldFile.getChildren().add(textArea);
-                        textAreaList.add(textArea);
-                        int lineCount = textArea.getText().split("\n").length;
-                        Print.pbl("lineCount=" + lineCount);
-                        textArea.setPrefSize( Double.MAX_VALUE, lineHeight*(lineCount + 3) );
+                          MyTextArea myTextArea = (new MyTextArea(list)).createMyTextArea();
+//                        TextArea textArea = new TextArea();
+//                        addListToTextArea(textArea, list);
+//
+//                        // TODO: return textflow or flowpane here
+//                        int lineCount = textArea.getText().split("\n").length;
+//                        Print.pbl("lineCount=" + lineCount);
+//                        textArea.setPrefSize( Double.MAX_VALUE, lineHeight*(lineCount + 5) );
+//                        vboxTextFieldFile.getChildren().add(textArea);
+//                        textAreaList.add(textArea);
+                        vboxTextFieldFile.getChildren().add(myTextArea);
+                        textAreaList.add(myTextArea);
                     }
                     content.putString(textAreaList.get(0).getText());
                     clipboard.setContent(content);
@@ -469,7 +493,6 @@ public class Main  extends Application {
 
         comboboxKeyWordSearch.getEditor().addEventFilter(KeyEvent.KEY_PRESSED, event -> {
             Print.pbl("KEY_PRESSED: KeyEvent       :=" + comboboxKeyWordSearch.getEditor().getText());
-
             if (event.getCode() == KeyCode.ENTER) {
                 Print.pbl("ENTER KEY: selected item:=" + comboboxKeyWordSearch.getEditor().getText());
                 comboboxKeyWordSearch.hide();
@@ -599,11 +622,11 @@ public class Main  extends Application {
 
         scrollPane.setFitToHeight(true);
         scrollPane.setFitToWidth(true);
-        scrollPane.setPrefSize(WINDOW_WIDTH,  WINDOW_HEIGHT);
+        scrollPane.setPrefSize(SCOLLPANE_WIDTH,  SCOLLPANE_HEIGHT);
         scrollPane.setContent(vboxTextFieldFile);
 
         gridpane.add(scrollPane, 1, 0);
-        Scene scene = new Scene(gridpane, comboboxWith + WINDOW_WIDTH, WINDOW_HEIGHT);
+        Scene scene = new Scene(gridpane, LEFT_COMBOBOX_WIDTH + SCOLLPANE_WIDTH, SCOLLPANE_HEIGHT);
         primaryStage.setScene(scene);
         primaryStage.show();
 
@@ -612,7 +635,7 @@ public class Main  extends Application {
 //      test5();
 //        test6();
         //test7();
-        test8();
+        //test8();
     }
     public static void terminateProgram(Control control){
         final KeyCombination keyCombinationShiftC = new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_DOWN);
@@ -694,7 +717,7 @@ public class Main  extends Application {
 
     private TextArea appendStringToTextAre(List<String> list){
         TextArea textArea = new TextArea();
-        textArea.setFont(Font.font ("Verdana", 20));
+        textArea.setFont(javafx.scene.text.Font.font (java.awt.Font.MONOSPACED, 16));
         for(String line : list){
             textArea.appendText(line + "\n");
             Print.pbl("s=" + line + "\n");
@@ -809,7 +832,7 @@ public class Main  extends Application {
      */
     private static void addFlowPaneToVBox(VBox vbox, String lastLine){
         List<String> list = splitImageStrLine(lastLine);
-        List<ImageView> imageViewList = imageFileToImageView(list);
+        List<ImageView> imageViewList = imageFileToImageView(list, 800, 800);
         for(ImageView iv : imageViewList) {
             BorderPane borderPane = new BorderPane();
             borderPane.setCenter(iv);
@@ -828,14 +851,29 @@ public class Main  extends Application {
      * @param vbox contains list of ImageView objects
      * @param list contains the "code block"
      */
-    private static void addFlowPaneToVBox(VBox vbox, List<String> list){
+    private static void addImageToVbox(VBox vbox, List<String> list, double imgWidth, double imgHeight){
         // extract image file names in reverse order
         List<String> imgList = extractImageFiles(list);
-        List<ImageView> imageViewList = imageFileToImageView(imgList);
+        List<ImageView> imageViewList = imageFileToImageView(imgList, imgWidth, imgHeight);
         for(ImageView iv : imageViewList) {
             BorderPane borderPane = new BorderPane();
             borderPane.setCenter(iv);
             vbox.getChildren().add(borderPane);
+        }
+    }
+
+    /**
+     * add list of string to TextArea
+     *
+     * @param textArea contains list of string
+     * @param list that needs to be added
+     */
+    private static void addListToTextArea(TextArea textArea, List<String> list){
+        textArea.setFont(javafx.scene.text.Font.font ("Verdana", 16));
+        for(String word : list){
+            String line = word + "\n";
+            textArea.appendText(line);
+            Print.pbl("s=" + word);
         }
     }
 
@@ -902,7 +940,7 @@ public class Main  extends Application {
         fileName.setLayoutX(30);
         fileName.setLayoutY(160);
 
-        List<ImageView> imageViewList = imageFileToImageView(Arrays.asList(imageNames));
+        List<ImageView> imageViewList = imageFileToImageView(Arrays.asList(imageNames), 800, 800);
         for(ImageView iv : imageViewList) {
             vb.getChildren().add(iv);
         }
@@ -922,7 +960,7 @@ public class Main  extends Application {
      * @param listImgNames is a list of image names
      * @return a list of ImageViews or an empty list
      */
-    private static List<ImageView> imageFileToImageView(List<String> listImgNames){
+    private static List<ImageView> imageFileToImageView(List<String> listImgNames, double imgWidth, double imgHeight){
         List<ImageView> imageList = new ArrayList<>();
         for (String imgPath : listImgNames) {
             //TODO: Add getResource to get the resources/images
@@ -940,8 +978,8 @@ public class Main  extends Application {
             }
             if(imageView != null) {
                 imageList.add(imageView);
-                imageView.setFitHeight(600);
-                imageView.setFitWidth(600);
+                imageView.setFitHeight(imgWidth);
+                imageView.setFitWidth(imgHeight);
                 imageView.setPreserveRatio(true);
                 imageList.add(imageView);
             }
