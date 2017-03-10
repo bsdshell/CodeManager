@@ -28,6 +28,7 @@ import javafx.scene.layout.*;
 import javafx.scene.text.*;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.PDFRenderer;
 
@@ -618,7 +619,12 @@ public class Main  extends Application {
         control.setOnKeyPressed(event -> {
             if (keyCombinationShiftC.match(event)) {
                 Print.pbl("CTRL + C Pressed" + " hashCode=" + control.hashCode());
+
+                // the line CAN NOT close all the running threads
                 Platform.exit();
+
+                // the line need to terminate all the running threads.
+                System.exit(0);
             }
         });
     }
@@ -656,6 +662,7 @@ public class Main  extends Application {
         };
         Timer timer = new Timer();
         timer.schedule( task , new Date(), 2000 );
+
     }
 
     /**
@@ -983,10 +990,7 @@ public class Main  extends Application {
         }
 
         PDFRenderer renderer = new PDFRenderer(doc);
-        //PDFBoxでレンダリングして、BufferedImageを作成
         BufferedImage img = renderer.renderImage(0, pdfScale);
-
-        //JavaFXで扱えるように、WritableImageに変換
         WritableImage fxImage = SwingFXUtils.toFXImage(img, null);
         return new ImageView(fxImage);
     }
