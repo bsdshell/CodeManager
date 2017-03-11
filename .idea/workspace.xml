@@ -1,18 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="f1ccb5df-65ac-4d36-b026-4e13495a941a" name="Default" comment="">
-      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/Hello_intellij/Main$2.class" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/Hello_intellij/Main$3.class" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/Hello_intellij/Main$4.class" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/Hello_intellij/Main$5.class" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/out/production/Hello_intellij/Main$6.class" afterPath="" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/out/production/Hello_intellij/Main$1.class" afterPath="$PROJECT_DIR$/out/production/Hello_intellij/Main$1.class" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/out/production/Hello_intellij/Main.class" afterPath="$PROJECT_DIR$/out/production/Hello_intellij/Main.class" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/out/production/Hello_intellij/ProcessList.class" afterPath="$PROJECT_DIR$/out/production/Hello_intellij/ProcessList.class" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/misc.xml" afterPath="$PROJECT_DIR$/.idea/misc.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-    </list>
+    <list default="true" id="f1ccb5df-65ac-4d36-b026-4e13495a941a" name="Default" comment="" />
     <ignored path="Hello_intellij.iws" />
     <ignored path=".idea/workspace.xml" />
     <ignored path="$PROJECT_DIR$/out/" />
